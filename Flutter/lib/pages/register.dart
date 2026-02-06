@@ -17,6 +17,7 @@ class _RegisterState extends State<Register> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   String? _selectedGender;
@@ -119,13 +120,13 @@ class _RegisterState extends State<Register> {
   Column _topSection() {
     return Column(
       children: const [
-        SizedBox(height: 100),
+        SizedBox(height: 50),
         Text(
-          'Register Here',
+          'Sign Up',
           style: TextStyle(
             fontSize: 35,
             fontWeight: FontWeight.bold,
-            color: Color(0xff74B8FF),
+            color: Color(0xff000000),
           ),
         ),
         SizedBox(height: 30),
@@ -144,12 +145,12 @@ class _RegisterState extends State<Register> {
   Column _fieldSection() {
     return Column(
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         const Text(
-          'Fill in your details to register',
+          'Please enter your details to register',
           style: TextStyle(fontSize: 16, color: Colors.black),
         ),
-        const SizedBox(height: 50),
+        const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -159,30 +160,37 @@ class _RegisterState extends State<Register> {
                 svgIconPath: 'assets/icons/user.svg',
                 controller: _fullNameController,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
               _buildTextField(
                 hintText: 'Email',
                 svgIconPath: 'assets/icons/email.svg',
                 controller: _emailController,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
               _buildTextField(
                 hintText: 'Password',
                 svgIconPath: 'assets/icons/key.svg',
                 controller: _passwordController,
                 obscureText: true,
               ),
-              const SizedBox(height: 30),
-              _buildGenderDropdown(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
               _buildTextField(
-                hintText: 'Phone',
+                hintText: 'Confirm Password',
+                svgIconPath: 'assets/icons/key.svg',
+                controller: _confirmPasswordController,
+                obscureText: true,
+              ),
+              const SizedBox(height: 25),
+              _buildGenderDropdown(),
+              const SizedBox(height: 25),
+              _buildTextField(
+                hintText: 'Mobile Number',
                 svgIconPath: 'assets/icons/phone.svg',
                 controller: _phoneController,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
               _buildDatePickerField(),
-              const SizedBox(height: 50),
+              const SizedBox(height: 35),
             ],
           ),
         ),
@@ -199,15 +207,6 @@ class _RegisterState extends State<Register> {
     VoidCallback? onTap,
   }) {
     return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff74B8FF).withOpacity(0.4),
-            spreadRadius: 0,
-            blurRadius: 70,
-          ),
-        ],
-      ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
@@ -215,22 +214,29 @@ class _RegisterState extends State<Register> {
         onTap: onTap,
         decoration: InputDecoration(
           filled: true,
-          fillColor: const Color(0xff74B8FF).withOpacity(0.2),
-          contentPadding: const EdgeInsets.all(15),
+          fillColor: const Color(0xffffffff).withOpacity(0.2),
+          contentPadding: const EdgeInsets.all(10),
           hintText: hintText,
           hintStyle: TextStyle(
             color: Colors.black.withOpacity(0.5),
             fontSize: 16,
           ),
+          // Default border (gray)
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: Color(0xff74B8FF),
-            ),
+            borderSide: const BorderSide(color: Colors.grey),
           ),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.all(15),
-            child: SvgPicture.asset(svgIconPath),
+
+          // Border when not focused
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+
+          // Border when focused
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.grey, width: 1.5),
           ),
         ),
       ),
@@ -239,15 +245,6 @@ class _RegisterState extends State<Register> {
 
   Container _buildGenderDropdown() {
     return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff74B8FF).withOpacity(0.4),
-            spreadRadius: 0,
-            blurRadius: 70,
-          ),
-        ],
-      ),
       child: DropdownButtonFormField<String>(
         value: _selectedGender,
         hint: Text(
@@ -259,20 +256,12 @@ class _RegisterState extends State<Register> {
         ),
         decoration: InputDecoration(
           filled: true,
-          fillColor: const Color(0xff74B8FF).withOpacity(0.2),
-          contentPadding: const EdgeInsets.all(15),
+          fillColor: const Color(0xffffffff).withOpacity(0.2),
+          contentPadding: const EdgeInsets.all(10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(
               color: Color(0xff74B8FF),
-            ),
-          ),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.all(15),
-            child: SvgPicture.asset(
-              'assets/icons/gender.svg',
-              height: 24, // Match other icons
-              width: 24,  // Match other icons
             ),
           ),
         ),
@@ -311,7 +300,7 @@ class _RegisterState extends State<Register> {
             // onPressed: _isLoading ? null : _register,
             onPressed: null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9DCEFF),
+              backgroundColor: const Color(0xFF000000),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -320,7 +309,7 @@ class _RegisterState extends State<Register> {
             child: _isLoading
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Text(
-              "Register",
+              "Sign Up",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -329,10 +318,37 @@ class _RegisterState extends State<Register> {
             ),
           ),
         ),
-        const SizedBox(height: 50),
+        const SizedBox(height: 10),
         const Text(
-          "Or",
+          "By clicking sign up, you agree to our Terms of Service and Privacy Policy",
           style: TextStyle(fontSize: 16, color: Colors.black),
+        ),
+        const SizedBox(height: 30),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20), //
+          child: Row(
+            children: const [
+              Expanded(
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.grey,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "Or",
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 20),
         Row(

@@ -84,8 +84,9 @@ class _LoginState extends State<Login> {
     return Column(
       children: const [
         SizedBox(height: 100),
-        Text('Login Here', style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Color(0xff74B8FF))),
-        SizedBox(height: 30),
+        Text('Login', style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Color(
+            0xff000000))),
+        SizedBox(height: 70),
         Text('Welcome back!', style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold)),
       ],
     );
@@ -94,16 +95,16 @@ class _LoginState extends State<Login> {
   Column _fieldSection() {
     return Column(
       children: [
-        const Text('Please login to your account', style: TextStyle(fontSize: 16, color: Colors.black)),
-        const SizedBox(height: 50),
+        const Text('Please enter your email and password', style: TextStyle(fontSize: 16, color: Colors.black)),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _inputField("Email", _emailController, 'assets/icons/email.svg'),
+              _inputField("email@domain.com", _emailController, 'assets/icons/email.svg'),
               const SizedBox(height: 30),
-              _inputField("Password", _passwordController, 'assets/icons/key.svg', isPassword: true),
-              const SizedBox(height: 50),
+              _inputField("*****************", _passwordController, 'assets/icons/key.svg', isPassword: true),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -117,13 +118,13 @@ class _LoginState extends State<Login> {
       obscureText: isPassword,
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xff74B8FF).withOpacity(0.2),
+        fillColor: const Color(0xffffffff).withOpacity(0.2),
         contentPadding: const EdgeInsets.all(15),
         hintText: hint,
         hintStyle: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xff74B8FF)),
+          borderSide: const BorderSide(color: Color(0xffffffff)),
         ),
         prefixIcon: Padding(
           padding: const EdgeInsets.all(15),
@@ -141,31 +142,72 @@ class _LoginState extends State<Login> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: ElevatedButton(
             // onPressed: _isLoading ? null : _login,
-            onPressed: null ,
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const Register()));
+            },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9DCEFF),
+              backgroundColor: const Color(0xff000000),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
             ),
             child: _isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const Text("Sign in", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                ? const CircularProgressIndicator(color: Color(0xffffffff))
+                : const Text("Sign in", style: TextStyle(color: Colors.white, fontSize: 20)),
           ),
         ),
-        const SizedBox(height: 50),
-        const Text("Or", style: TextStyle(fontSize: 16, color: Colors.black)),
+        const SizedBox(height: 30),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20), //
+          child: Row(
+            children: const [
+              Expanded(
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.grey,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "Or",
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  thickness: 1,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Don't have an account?"),
-            TextButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const Register()));
-              },
-              child: const Text("Register", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xff74B8FF))),
-            ),
+            const Text("If you haven’t already sign up")
           ],
+        ),
+        const SizedBox(height: 20),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: ElevatedButton(
+            // onPressed: _isLoading ? null : _login,
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const Register()));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xffe2dbe3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Color(0xffbdbaba))
+                : const Text("Sign Up", style: TextStyle(color: Color(0xff000000), fontSize: 20)),
+          ),
         ),
       ],
     );
