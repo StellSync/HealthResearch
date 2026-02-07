@@ -10,7 +10,6 @@ class Dashboard extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: _bottomNav(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -174,22 +173,6 @@ class Dashboard extends StatelessWidget {
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       ),
-    );
-  }
-
-  // ---------------- BOTTOM NAV ----------------
-  Widget _bottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      selectedItemColor: Colors.black,
-      unselectedItemColor: Colors.grey,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.directions_run), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: ""),
-      ],
     );
   }
 }

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:health_research/pages/academicHome.dart';
+import 'package:health_research/pages/dashboard.dart';
+import 'package:health_research/pages/schedule.dart';
+import 'package:health_research/pages/timeSerie.dart';
+import 'package:health_research/pages/warebleHome.dart';
 
 class BaseUi extends StatefulWidget {
   const BaseUi({super.key});
@@ -12,7 +17,11 @@ class _HomePageState extends State<BaseUi> {
   int _selectedIndex = 0;
 
   static List<Widget> _widgetOptions = <Widget>[
-
+    Dashboard(),
+    Schedule(),
+    AcademicHome(),
+    WarebleHome(),
+    Timeserie(),
   ];
 
   void _onItemTapped(int index) {
@@ -35,16 +44,20 @@ class _HomePageState extends State<BaseUi> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.health_and_safety),
-            label: 'Therapy',
+            icon: Icon(Icons.calendar_today),
+            label: 'Schedule',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.local_activity),
-            label: 'Activity',
+            icon: Icon(Icons.menu_book),
+            label: 'Academic',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.directions_run),
+            label: 'Behavior',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Time Series',
           ),
         ],
         currentIndex: _selectedIndex,
