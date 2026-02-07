@@ -3,11 +3,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:health_research/models/User.dart';
 // import 'package:thera_up/pages/base_ui.dart';
 import 'package:health_research/pages/register.dart';
+import 'package:health_research/pages/dashboard.dart';
 // import 'package:thera_up/services/UserApiService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 //shortcut for creating a stateless widget "stl"
-class Login extends StatefulWidget  {
+class Login extends StatefulWidget {
   const Login({super.key});
 
   @override
@@ -50,7 +51,9 @@ class _LoginState extends State<Login> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+      SnackBar(
+          content: Text(message, style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.red),
     );
   }
 
@@ -67,7 +70,8 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView( // FIXED BOTTOM OVERFLOW
+        child: SingleChildScrollView(
+          // FIXED BOTTOM OVERFLOW
           child: Column(
             children: [
               _topSection(),
@@ -84,10 +88,17 @@ class _LoginState extends State<Login> {
     return Column(
       children: const [
         SizedBox(height: 100),
-        Text('Login', style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Color(
-            0xff000000))),
+        Text('Login',
+            style: TextStyle(
+                fontSize: 35,
+                fontWeight: FontWeight.bold,
+                color: Color(0xff000000))),
         SizedBox(height: 70),
-        Text('Welcome back!', style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold)),
+        Text('Welcome back!',
+            style: TextStyle(
+                fontSize: 20,
+                color: Colors.black,
+                fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -95,15 +106,19 @@ class _LoginState extends State<Login> {
   Column _fieldSection() {
     return Column(
       children: [
-        const Text('Please enter your email and password', style: TextStyle(fontSize: 16, color: Colors.black)),
+        const Text('Please enter your email and password',
+            style: TextStyle(fontSize: 16, color: Colors.black)),
         const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _inputField("email@domain.com", _emailController, 'assets/icons/email.svg'),
+              _inputField("email@domain.com", _emailController,
+                  'assets/icons/email.svg'),
               const SizedBox(height: 30),
-              _inputField("*****************", _passwordController, 'assets/icons/key.svg', isPassword: true),
+              _inputField("*****************", _passwordController,
+                  'assets/icons/key.svg',
+                  isPassword: true),
               const SizedBox(height: 30),
             ],
           ),
@@ -112,7 +127,8 @@ class _LoginState extends State<Login> {
     );
   }
 
-  Widget _inputField(String hint, TextEditingController controller, String icon, {bool isPassword = false}) {
+  Widget _inputField(String hint, TextEditingController controller, String icon,
+      {bool isPassword = false}) {
     return TextField(
       controller: controller,
       obscureText: isPassword,
@@ -121,7 +137,8 @@ class _LoginState extends State<Login> {
         fillColor: const Color(0xffffffff).withOpacity(0.2),
         contentPadding: const EdgeInsets.all(15),
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 16),
+        hintStyle:
+            TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xffffffff)),
@@ -143,16 +160,19 @@ class _LoginState extends State<Login> {
           child: ElevatedButton(
             // onPressed: _isLoading ? null : _login,
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const Register()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const Dashboard()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff000000),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
             ),
             child: _isLoading
                 ? const CircularProgressIndicator(color: Color(0xffffffff))
-                : const Text("Sign in", style: TextStyle(color: Colors.white, fontSize: 20)),
+                : const Text("Sign in",
+                    style: TextStyle(color: Colors.white, fontSize: 20)),
           ),
         ),
         const SizedBox(height: 30),
@@ -182,13 +202,10 @@ class _LoginState extends State<Login> {
             ],
           ),
         ),
-
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("If you haven’t already sign up")
-          ],
+          children: [const Text("If you haven’t already sign up")],
         ),
         const SizedBox(height: 20),
         Container(
@@ -197,16 +214,19 @@ class _LoginState extends State<Login> {
           child: ElevatedButton(
             // onPressed: _isLoading ? null : _login,
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const Register()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const Register()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xffe2dbe3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
             ),
             child: _isLoading
                 ? const CircularProgressIndicator(color: Color(0xffbdbaba))
-                : const Text("Sign Up", style: TextStyle(color: Color(0xff000000), fontSize: 20)),
+                : const Text("Sign Up",
+                    style: TextStyle(color: Color(0xff000000), fontSize: 20)),
           ),
         ),
       ],
