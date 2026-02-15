@@ -3,6 +3,7 @@ import 'package:health_research/pages/academicHome.dart';
 import 'package:health_research/pages/dashboard.dart';
 import 'package:health_research/pages/schedule.dart';
 import 'package:health_research/pages/timeSerie.dart';
+import 'package:health_research/pages/usage_stats_screen.dart';
 import 'package:health_research/pages/warebleHome.dart';
 
 class BaseUi extends StatefulWidget {
@@ -21,7 +22,8 @@ class _HomePageState extends State<BaseUi> {
     Schedule(),
     AcademicHome(),
     WarebleHome(),
-    Timeserie(),
+    UsageStatsScreen(),
+    // TimeSeriesDashboard(),
   ];
 
   void _onItemTapped(int index) {
