@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:health_research/pages/schedule_session.dart';
 
 class Dashboard extends StatelessWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -19,7 +20,7 @@ class Dashboard extends StatelessWidget {
             children: [
               _headerCard(date),
               const SizedBox(height: 16),
-              _statusCards(),
+              _statusCards(context),
               const SizedBox(height: 20),
               const Text(
                 "Try following activities to lift your mood",
@@ -68,7 +69,7 @@ class Dashboard extends StatelessWidget {
   }
 
   // ---------------- STATUS CARDS ----------------
-  Widget _statusCards() {
+  Widget _statusCards(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -80,18 +81,28 @@ class Dashboard extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _infoCard(
-            title: "Sessions Pending",
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Text("1",
-                    style:
-                        TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
-                Text("Remaining this month",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12)),
-              ],
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ScheduleSessionPage(),
+                ),
+              );
+            },
+            child: _infoCard(
+              title: "Sessions Pending",
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text("1",
+                      style:
+                          TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+                  Text("Remaining this month",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12)),
+                ],
+              ),
             ),
           ),
         ),

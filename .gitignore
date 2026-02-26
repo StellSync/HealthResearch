@@ -1,0 +1,14 @@
+# Ignore everything
+*
+
+# Except the Flutter directory
+!Flutter/
+
+# But ignore all contents inside it first
+Flutter/*
+
+# Then re-allow all files and folders inside Flutter
+!Flutter/**
+
+# Keep Git tracking this file
+!.gitignore
