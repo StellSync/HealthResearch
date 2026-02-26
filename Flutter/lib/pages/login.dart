@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:health_research/models/User.dart';
+import 'package:health_research/pages/baseUi.dart';
 // import 'package:thera_up/pages/base_ui.dart';
 import 'package:health_research/pages/register.dart';
 import 'package:health_research/pages/dashboard.dart';
@@ -161,7 +162,7 @@ class _LoginState extends State<Login> {
             // onPressed: _isLoading ? null : _login,
             onPressed: () {
               Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const Dashboard()));
+                  MaterialPageRoute(builder: (context) => const BaseUi()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xff000000),

@@ -319,10 +319,14 @@ class _RegisterState extends State<Register> {
           ),
         ),
         const SizedBox(height: 10),
-        const Text(
-          "By clicking sign up, you agree to our Terms of Service and Privacy Policy",
-          style: TextStyle(fontSize: 16, color: Colors.black),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20), //
+          child: Text(
+            "By clicking sign up, you agree to our Terms of Service and Privacy Policy",
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
         ),
+
         const SizedBox(height: 30),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20), //
@@ -351,26 +355,23 @@ class _RegisterState extends State<Register> {
           ),
         ),
         const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Already have an account?'),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Login()),
-                );
-              },
-              child: const Text(
-                'Login',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xff74B8FF),
-                ),
-              ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: ElevatedButton(
+            // onPressed: _isLoading ? null : _login,
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const Login()));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xffe2dbe3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
             ),
-          ],
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Color(0xffbdbaba))
+                : const Text("Sign In", style: TextStyle(color: Color(0xff000000), fontSize: 20)),
+          ),
         ),
       ],
     );
