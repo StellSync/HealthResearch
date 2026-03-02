@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:health_research/models/User.dart';
 import 'package:health_research/pages/login.dart';
-// import 'package:health_research/services/UserApiService.dart';
+import 'package:health_research/services/RegisterApiService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Register extends StatefulWidget {
@@ -14,59 +14,99 @@ class Register extends StatefulWidget {
 }
 
 class _RegisterState extends State<Register> {
-  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
   String? _selectedGender;
-  // final UserApiService _apiService = UserApiService();
+  final RegisterApiService _apiService = RegisterApiService();
   bool _isLoading = false;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
 
-  // Future<void> _register() async {
-  //   setState(() => _isLoading = true);
-  //
-  //   String fullName = _fullNameController.text.trim();
-  //   String email = _emailController.text.trim();
-  //   String password = _passwordController.text.trim();
-  //   String phone = _phoneController.text.trim();
-  //   String dob = _dobController.text.trim();
-  //   String gender = _selectedGender ?? '';
-  //
-  //   if (fullName.isEmpty ||
-  //       email.isEmpty ||
-  //       password.isEmpty ||
-  //       gender.isEmpty ||
-  //       phone.isEmpty ||
-  //       dob.isEmpty) {
-  //     _showError("Please fill in all fields.");
-  //     setState(() => _isLoading = false);
-  //     return;
-  //   }
-  //
-  //   try {
-  //     await _apiService.registerUser(
-  //       fullName: fullName,
-  //       email: email,
-  //       password: password,
-  //       gender: gender,
-  //       phone: phone,
-  //       dob: dob,
-  //     );
-  //     _showSuccess("Registration successful! Please log in.");
-  //     Navigator.pushReplacement(
-  //       context,
-  //       MaterialPageRoute(builder: (context) => const Login()),
-  //     );
-  //   } catch (e) {
-  //     _showError(e.toString());
-  //   }
-  //
-  //   setState(() => _isLoading = false);
-  // }
+  Future<void> _register() async {
+    setState(() => _isLoading = true);
+
+    String firstName = _firstNameController.text.trim();
+    String lastName = _lastNameController.text.trim();
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+    String confirmPassword = _confirmPasswordController.text.trim();
+    String phone = _phoneController.text.trim();
+    String dob = _dobController.text.trim();
+    String gender = _selectedGender ?? '';
+    String address = _addressController.text.trim();
+
+    // Validation checks
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty ||
+        gender.isEmpty ||
+        phone.isEmpty ||
+        dob.isEmpty ||
+        address.isEmpty) {
+      _showError("Please fill in all fields.");
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    // Password length validation (minimum 8 characters)
+    if (password.length < 8) {
+      _showError("Password must be at least 8 characters long.");
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    // Password match validation
+    if (password != confirmPassword) {
+      _showError("Passwords do not match.");
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    // Email validation
+    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        .hasMatch(email)) {
+      _showError("Please enter a valid email address.");
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final response = await _apiService.registerUser(
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword,
+        phone: phone,
+        dateOfBirth: dob,
+        gender: gender,
+        address: address,
+      );
+
+      _showSuccess("Registration successful! Redirecting to login...");
+
+      // Navigate to login after a short delay
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Login()),
+        );
+      }
+    } catch (e) {
+      _showError(e.toString());
+    }
+
+    setState(() => _isLoading = false);
+  }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -156,9 +196,15 @@ class _RegisterState extends State<Register> {
           child: Column(
             children: [
               _buildTextField(
-                hintText: 'Full Name',
+                hintText: 'First Name',
                 svgIconPath: 'assets/icons/user.svg',
-                controller: _fullNameController,
+                controller: _firstNameController,
+              ),
+              const SizedBox(height: 25),
+              _buildTextField(
+                hintText: 'Last Name',
+                svgIconPath: 'assets/icons/user.svg',
+                controller: _lastNameController,
               ),
               const SizedBox(height: 25),
               _buildTextField(
@@ -190,6 +236,12 @@ class _RegisterState extends State<Register> {
               ),
               const SizedBox(height: 25),
               _buildDatePickerField(),
+              const SizedBox(height: 25),
+              _buildTextField(
+                hintText: 'Address',
+                svgIconPath: 'assets/icons/location.svg',
+                controller: _addressController,
+              ),
               const SizedBox(height: 35),
             ],
           ),
@@ -297,8 +349,7 @@ class _RegisterState extends State<Register> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: ElevatedButton(
-            // onPressed: _isLoading ? null : _register,
-            onPressed: null,
+            onPressed: _isLoading ? null : _register,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF000000),
               shape: RoundedRectangleBorder(

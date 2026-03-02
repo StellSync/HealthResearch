@@ -1,8 +1,100 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:health_research/pages/login.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class Dashboard extends StatelessWidget {
+class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
+
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  String firstName = "User";
+  String patientId = "";
+  int pendingSessions = 0;
+  String memberSince = "";
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    patientId = prefs.getString('patientId') ?? '';
+    setState(() {
+      firstName = prefs.getString('firstName') ?? 'User';
+    });
+
+    if (patientId.isNotEmpty) {
+      await _fetchDashboardData();
+    }
+  }
+
+  Future<void> _fetchDashboardData() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.33.135.43:8000/api/patients/dashboard/$patientId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        setState(() {
+          pendingSessions = jsonResponse['pending_sessions'] ?? 0;
+          memberSince = jsonResponse['member_since'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error fetching dashboard data: $e');
+    }
+    setState(() => isLoading = false);
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return "Good Morning";
+    } else if (hour >= 12 && hour < 17) {
+      return "Good Afternoon";
+    } else if (hour >= 17 && hour < 21) {
+      return "Good Evening";
+    } else {
+      return "Good Night";
+    }
+  }
+
+  String _formatMemberSince() {
+    if (memberSince.isEmpty) return "Recently";
+    try {
+      final dateTime = DateTime.parse(memberSince);
+      return DateFormat('dd/MM/yyyy').format(dateTime);
+    } catch (e) {
+      return "Recently";
+    }
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const Login()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,6 +102,30 @@ class Dashboard extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: SizedBox(
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text("Logout"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -33,7 +149,6 @@ class Dashboard extends StatelessWidget {
     );
   }
 
-  // ---------------- HEADER ----------------
   Widget _headerCard(String date) {
     return Container(
       height: 110,
@@ -51,14 +166,14 @@ class Dashboard extends StatelessWidget {
         children: [
           Text(date, style: const TextStyle(color: Colors.white, fontSize: 14)),
           const Spacer(),
-          const Text(
-            "Good Morning",
-            style: TextStyle(
+          Text(
+            _getGreeting(),
+            style: const TextStyle(
                 color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const Text(
-            "Vinuja",
-            style: TextStyle(
+          Text(
+            firstName,
+            style: const TextStyle(
                 color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           ),
         ],
@@ -66,32 +181,53 @@ class Dashboard extends StatelessWidget {
     );
   }
 
-  // ---------------- STATUS CARDS ----------------
   Widget _statusCards() {
     return Row(
       children: [
         Expanded(
           child: _infoCard(
-            title: "You are in a\nHappy Mood",
-            child: const Icon(Icons.sentiment_satisfied,
-                size: 60, color: Colors.orange),
+            title: "Member Since",
+            child: isLoading
+                ? const SizedBox(
+                    height: 60,
+                    child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : Text(
+                    _formatMemberSince(),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _infoCard(
             title: "Sessions Pending",
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Text("1",
-                    style:
-                        TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
-                Text("Remaining this month",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12)),
-              ],
-            ),
+            child: isLoading
+                ? const SizedBox(
+                    height: 60,
+                    child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        pendingSessions.toString(),
+                        style: const TextStyle(
+                            fontSize: 36, fontWeight: FontWeight.bold),
+                      ),
+                      const Text(
+                        "Remaining this month",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
@@ -119,7 +255,6 @@ class Dashboard extends StatelessWidget {
     );
   }
 
-  // ---------------- ACTIVITIES ----------------
   Widget _activitiesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
