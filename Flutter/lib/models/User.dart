@@ -1,33 +1,41 @@
 class User {
-  final int id;
-  final String fullName;
+  final String patientId;
+  final String firstName;
   final String email;
-  final String gender;
-  final String phone;
-  final String dob;
-  final String role;
-  final String joinedAt;
+  final bool hasAssignedDoctors;
+
+  // Optional fields for backward compatibility
+  final String? fullName;
+  final String? gender;
+  final String? phone;
+  final String? dob;
+  final String? role;
+  final String? joinedAt;
 
   User({
-    required this.id,
-    required this.fullName,
+    required this.patientId,
+    required this.firstName,
     required this.email,
-    required this.gender,
-    required this.phone,
-    required this.dob,
-    required this.role,
-    required this.joinedAt,
+    required this.hasAssignedDoctors,
+    this.fullName,
+    this.gender,
+    this.phone,
+    this.dob,
+    this.role,
+    this.joinedAt,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      fullName: json['full_name'],
-      email: json['email'],
+      patientId: json['patient_id'] ?? json['id'] ?? '',
+      firstName: json['first_name'] ?? json['fullName'] ?? '',
+      email: json['email'] ?? '',
+      hasAssignedDoctors: json['has_assigned_doctors'] ?? false,
+      fullName: json['full_name'] ?? json['firstName'],
       gender: json['gender'],
       phone: json['phone'],
       dob: json['dob'],
-      role: json['role']['role_name'],
+      role: json['role'] is Map ? json['role']['role_name'] : json['role'],
       joinedAt: json['joined_at'],
     );
   }

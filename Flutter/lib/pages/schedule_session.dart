@@ -1,231 +1,410 @@
 import 'package:flutter/material.dart';
-import 'package:health_research/pages/therapy_video_call.dart';
-import '../services/agora_api.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:health_research/services/ScheduleSessionApiService.dart';
+import 'package:health_research/pages/payment.dart';
 
-class ScheduleSessionPage extends StatelessWidget {
-  const ScheduleSessionPage({Key? key}) : super(key: key);
+class ScheduleSessionPage extends StatefulWidget {
+  const ScheduleSessionPage({super.key});
+
+  @override
+  State<ScheduleSessionPage> createState() => _ScheduleSessionPageState();
+}
+
+class _ScheduleSessionPageState extends State<ScheduleSessionPage> {
+  final ScheduleSessionApiService _apiService = ScheduleSessionApiService();
+
+  String patientId = "";
+  String patientName = "";
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+  String? selectedDoctorId;
+  String? selectedDoctorName;
+  List<dynamic> availableDoctors = [];
+  bool isLoadingDoctors = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPatientInfo();
+  }
+
+  Future<void> _loadPatientInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      patientId = prefs.getString('patientId') ?? '';
+      patientName = prefs.getString('firstName') ?? 'User';
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+        selectedDoctorId = null;
+        selectedDoctorName = null;
+        availableDoctors = [];
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null && picked != selectedTime) {
+      setState(() {
+        selectedTime = picked;
+        selectedDoctorId = null;
+        selectedDoctorName = null;
+        availableDoctors = [];
+      });
+    }
+  }
+
+  Future<void> _loadAvailableDoctors() async {
+    if (selectedDate == null || selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select both date and time'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isLoadingDoctors = true);
+    try {
+      final startDateTime = DateTime(
+        selectedDate!.year,
+        selectedDate!.month,
+        selectedDate!.day,
+        selectedTime!.hour,
+        selectedTime!.minute,
+      );
+      final endDateTime = startDateTime.add(const Duration(hours: 1));
+
+      final response = await _apiService.getAvailableDoctors(
+        startDateTime: startDateTime.toIso8601String(),
+        endDateTime: endDateTime.toIso8601String(),
+      );
+
+      setState(() {
+        availableDoctors = response['available_doctors'] ?? [];
+        isLoadingDoctors = false;
+      });
+    } catch (e) {
+      setState(() => isLoadingDoctors = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading doctors: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _proceedToPayment() {
+    if (selectedDate == null || selectedTime == null || selectedDoctorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select date, time, and doctor'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final sessionDateTime = DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentPage(
+          doctorId: selectedDoctorId!,
+          doctorName: selectedDoctorName!,
+          patientId: patientId,
+          patientName: patientName,
+          sessionDate: sessionDateTime,
+          sessionTime: selectedTime!,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      bottomNavigationBar: _bottomNav(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.grey.shade200,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_month, size: 40),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "Schedule a Session",
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            "Schedule a session with a professional to lift your mood",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
-                      ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Schedule a Session',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildField(
+              label: 'Date',
+              value: selectedDate == null
+                  ? 'Add Date'
+                  : DateFormat('dd MMM yyyy').format(selectedDate!),
+              onTap: () => _selectDate(context),
+            ),
+            const SizedBox(height: 20),
+            _buildField(
+              label: 'Time',
+              value: selectedTime == null
+                  ? 'Add Time'
+                  : selectedTime!.format(context),
+              onTap: () => _selectTime(context),
+            ),
+            const SizedBox(height: 20),
+            _buildField(
+              label: 'Doctor',
+              value: selectedDoctorName ?? 'Select Doctor',
+              onTap: () {
+                if (availableDoctors.isEmpty && selectedDate != null && selectedTime != null) {
+                  _loadAvailableDoctors();
+                } else if (availableDoctors.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please select date and time first'),
+                      backgroundColor: Colors.red,
                     ),
-                    const Icon(Icons.arrow_forward_ios, size: 16)
-                  ],
+                  );
+                } else {
+                  _showDoctorList();
+                }
+              },
+              isLoading: isLoadingDoctors,
+            ),
+            const SizedBox(height: 30),
+            _buildPricingSection(),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _proceedToPayment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Pay and Schedule',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // Upcoming Section
-              _sectionTitle("Up Coming"),
-              const SizedBox(height: 12),
-              _upcomingCard(context),
-
-              const SizedBox(height: 24),
-
-              // Past Section
-              _sectionTitle("Past Sessions"),
-              const SizedBox(height: 12),
-              _pastCard(
-                  date: "1st December 2025",
-                  sessionId: "S202511",
-                  time: "6.30pm"),
-              const SizedBox(height: 12),
-              _pastCard(
-                  date: "21st November 2025",
-                  sessionId: "S202507",
-                  time: "6.30pm"),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Section title
-  Widget _sectionTitle(String title) {
-    return Row(
+  Widget _buildField({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const Spacer(),
-        const Icon(Icons.arrow_forward_ios, size: 16)
-      ],
-    );
-  }
-
-  // Upcoming card
-  Widget _upcomingCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.grey.shade300,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 28),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text("25th December 2025",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text("Session ID: S202523   Time : 8.30pm",
-                      style: TextStyle(fontSize: 12, color: Colors.black54)),
-                ],
-              ),
-            ],
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
           ),
-          const SizedBox(height: 12),
-          const Text("Dr. Jagath Perera",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const Text("Counseling psychologists",
-              style: TextStyle(fontSize: 12, color: Colors.black54)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text("Kindly join 5 minutes in advance",
-                  style: TextStyle(fontSize: 12, color: Colors.black54)),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    final data = await AgoraApi.getToken(
-                      sessionId: "S202523",
-                      role: "patient",
-                      uid: 1002, // Patient UID - must match Flutter patient app
-                    );
-
-                    // ─── ADD THESE PRINTS ────────────────────────────────────────
-                    print("╔════════════════════════════════════════════╗");
-                    print("║          TOKEN RESPONSE FROM BACKEND       ║");
-                    print("╚════════════════════════════════════════════╝");
-                    print("Full response: $data");
-                    print("token length: ${data['token']?.length ?? 'null'}");
-                    print("uid: ${data['uid']}");
-                    print(
-                        "channel (if any): ${data['channel'] ?? 'not returned'}");
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MainScreen(
-                          sessionId: "S202523",
-                          token: data['token'],
-                          uid: data['uid'] ?? 1002,
-                        ),
-                      ),
-                    );
-                  } catch (e) {
-                    print("Token fetch error: $e");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Failed to get token: $e")),
-                    );
-                  }
-                },
-                child: const Text("Join Now"),
-              )
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  // Past card
-  Widget _pastCard({
-    required String date,
-    required String sessionId,
-    required String time,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.grey.shade300,
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.access_time, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(date,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text("Session ID: $sessionId   Time : $time",
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.black54)),
-                const SizedBox(height: 6),
-                const Text("Dr. Jagath Perera",
-                    style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: value == 'Add Date' || value == 'Add Time' || value == 'Select Doctor'
+                        ? Colors.grey
+                        : Colors.black,
+                  ),
+                ),
+                isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
               ],
             ),
-          )
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
-  // Bottom navigation
-  Widget _bottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      selectedItemColor: Colors.black,
-      unselectedItemColor: Colors.grey,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.directions_run), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: ""),
+  Widget _buildPricingSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Subtotal (2)',
+          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(''),
+            Text(
+              'LKR 2000.00',
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Taxes',
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            ),
+            Text(
+              'LKR 180',
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Divider(color: Colors.grey),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text(
+              'Total',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            Text(
+              'LKR 2180.00',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+
+  void _showDoctorList() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Select Doctor',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableDoctors.length,
+              itemBuilder: (context, index) {
+                final doctor = availableDoctors[index];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedDoctorId = doctor['doctor_id'];
+                      selectedDoctorName = doctor['doctor_name'];
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      doctor['doctor_name'],
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
