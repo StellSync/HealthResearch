@@ -120,7 +120,8 @@ class _DashboardState extends State<Dashboard> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                 ),
               ),
@@ -136,7 +137,7 @@ class _DashboardState extends State<Dashboard> {
             children: [
               _headerCard(date),
               const SizedBox(height: 16),
-              _statusCards(context),
+              _statusCards(),
               const SizedBox(height: 20),
               const Text(
                 "Try following activities to lift your mood",
