@@ -7,25 +7,27 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 
 const String appId = "f84298e9180448cfb3d26e3ec61e49db";
+const String tokenServer = "http://10.33.135.43:8000/token";
 
-class MainScreen extends StatefulWidget {
+/// Doctor Video Call Screen
+/// This is used by the doctor/clinician on web/desktop
+/// Ensures 2-way video communication with proper UID management
+class DoctorVideoCall extends StatefulWidget {
   final String sessionId;
-  final String token;
-  final int uid;
+  final int doctorUid;
 
-  const MainScreen({
+  const DoctorVideoCall({
     super.key,
     required this.sessionId,
-    required this.token,
-    required this.uid,
+    this.doctorUid = 1001, // Doctor UID (different from patient UID 1002)
   });
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<DoctorVideoCall> createState() => _DoctorVideoCallState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int? _remoteUid;
+class _DoctorVideoCallState extends State<DoctorVideoCall> {
+  int? _remoteUid; // Patient's UID
   bool _localUserJoined = false;
   late RtcEngine _engine;
   late String _channelId;
@@ -37,16 +39,50 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _channelId = widget.sessionId;
+    debugPrint(
+        "🏥 Doctor Video Call Init - Session: $_channelId, Doctor UID: ${widget.doctorUid}");
     _initAgora();
   }
 
+  Future<String> _fetchToken(String channel) async {
+    try {
+      // Doctor on Flutter uses UID 1001 for consistency with web (1000)
+      final url =
+          Uri.parse("$tokenServer?channel=$channel&uid=${widget.doctorUid}");
+      debugPrint("📡 [DOCTOR] Requesting token from: $url");
+
+      final res = await http.get(url).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw Exception("Token request timed out"),
+          );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data["token"] == null) {
+          throw Exception("Token field missing in response");
+        }
+        debugPrint(
+            "✅ [DOCTOR] Token fetched (length: ${data['token'].toString().length})");
+        debugPrint("✅ [DOCTOR] Assigned UID: ${data['uid']}");
+        return data["token"];
+      } else {
+        throw Exception("Token request failed: ${res.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ [DOCTOR] Token fetch error: $e");
+      rethrow;
+    }
+  }
+
   Future<void> _initAgora() async {
-    // Request camera and microphone permissions
+    debugPrint("🔧 [DOCTOR] Initializing Agora...");
+
+    // Request permissions
     final cameraStatus = await Permission.camera.request();
-    final micStatus = await Permission.microphone.request();
+    await Permission.microphone.request();
 
     if (!cameraStatus.isGranted) {
-      debugPrint("❌ Camera permission denied: $cameraStatus");
+      debugPrint("❌ [DOCTOR] Camera permission denied");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Camera permission required")),
@@ -54,32 +90,29 @@ class _MainScreenState extends State<MainScreen> {
       }
       return;
     }
-    if (!micStatus.isGranted) {
-      debugPrint("⚠️ Microphone permission denied: $micStatus");
-    }
 
     _engine = createAgoraRtcEngine();
     await _engine.initialize(const RtcEngineContext(
       appId: appId,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
+    debugPrint("✅ [DOCTOR] Engine created");
 
+    // Register event handlers
     _engine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection conn, int elapsed) {
-          debugPrint(
-              "✅ [PATIENT] Joined channel - Local UID: ${conn.localUid}");
+          debugPrint("✅ [DOCTOR] Joined channel - Local UID: ${conn.localUid}");
           debugPrint("   Channel ID: ${conn.channelId}");
           debugPrint("   Elapsed: ${elapsed}ms");
           setState(() => _localUserJoined = true);
         },
         onUserJoined: (RtcConnection conn, int remoteUid, int elapsed) {
-          debugPrint("🔔 [PATIENT] DOCTOR JOINED");
+          debugPrint("🔔 [DOCTOR] PATIENT JOINED");
           debugPrint("   Remote UID: $remoteUid");
           debugPrint("   Elapsed: ${elapsed}ms");
-          debugPrint("   Configuring subscriptions...");
 
-          // Explicitly enable subscription to remote user's video and audio
+          // Explicitly enable subscription to remote streams
           debugPrint("   📡 Enabling remote video stream (uid: $remoteUid)...");
           _engine.muteRemoteVideoStream(uid: remoteUid, mute: false);
           debugPrint("   ✅ Remote video stream enabled");
@@ -93,22 +126,20 @@ class _MainScreenState extends State<MainScreen> {
         onUserOffline:
             (RtcConnection conn, int remoteUid, UserOfflineReasonType reason) {
           debugPrint(
-              "❌ [PATIENT] DOCTOR OFFLINE - UID: $remoteUid, Reason: $reason");
+              "❌ [DOCTOR] PATIENT OFFLINE - UID: $remoteUid, Reason: $reason");
           setState(() => _remoteUid = null);
         },
         onError: (ErrorCodeType err, String msg) {
-          debugPrint("❌ [PATIENT] ERROR: $err - $msg");
+          debugPrint("❌ [DOCTOR] ERROR: $err - $msg");
         },
-        onRemoteVideoStateChanged: (RtcConnection connection,
-            int remoteUid,
-            RemoteVideoState state,
-            RemoteVideoStateReason reason,
-            int elapsed) {
-          debugPrint("🎬 [PATIENT] REMOTE VIDEO STATE CHANGE");
+        onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid,
+            RemoteVideoState state, reason, int elapsed) {
+          debugPrint("🎬 [DOCTOR] REMOTE VIDEO STATE CHANGE");
           debugPrint("   UID: $remoteUid");
           debugPrint("   State: $state (${state.index})");
           debugPrint("   Reason: $reason");
           debugPrint("   Elapsed: ${elapsed}ms");
+          // MUTED = 0, RUNNING = 1, FAILED = 2, FROZEN = 3
           String stateStr = {
                 0: 'MUTED',
                 1: 'RUNNING',
@@ -123,11 +154,12 @@ class _MainScreenState extends State<MainScreen> {
             RemoteAudioState state,
             RemoteAudioStateReason reason,
             int elapsed) {
-          debugPrint("🔊 [PATIENT] REMOTE AUDIO STATE CHANGE");
+          debugPrint("🔊 [DOCTOR] REMOTE AUDIO STATE CHANGE");
           debugPrint("   UID: $remoteUid");
           debugPrint("   State: $state (${state.index})");
           debugPrint("   Reason: $reason");
           debugPrint("   Elapsed: ${elapsed}ms");
+          // MUTED = 0, RUNNING = 1, FAILED = 2, FROZEN = 3
           String stateStr = {
                 0: 'MUTED',
                 1: 'RUNNING',
@@ -137,30 +169,23 @@ class _MainScreenState extends State<MainScreen> {
               'UNKNOWN';
           debugPrint("   Readable State: $stateStr");
         },
-        onVideoDeviceStateChanged: (String deviceId, MediaDeviceType deviceType,
-            MediaDeviceStateType deviceState) {
-          debugPrint(
-              "🎥 [PATIENT] VIDEO DEVICE CHANGE - Device: $deviceId, Type: $deviceType, State: $deviceState");
-        },
       ),
     );
-    debugPrint("✅ [PATIENT] Event handlers registered successfully");
+    debugPrint("✅ [DOCTOR] Event handlers registered successfully");
 
     try {
-      // Enable video and audio BEFORE starting preview
+      // Enable video and audio
       await _engine.enableVideo();
-      debugPrint("✅ Video enabled");
-
       await _engine.enableAudio();
-      debugPrint("✅ Audio enabled");
+      debugPrint("✅ [DOCTOR] Video and audio enabled");
 
-      // Start local preview
+      // Start preview
       await _engine.startPreview();
-      debugPrint("✅ Local preview started - camera should be visible now");
+      debugPrint("✅ [DOCTOR] Preview started");
 
       setState(() => _localUserJoined = true);
     } catch (e) {
-      debugPrint("❌ Failed to enable video/audio: $e");
+      debugPrint("❌ [DOCTOR] Failed to enable video/audio: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to start camera: $e")),
@@ -170,30 +195,26 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     try {
-      debugPrint("📡 Using token from session request");
-      debugPrint("✅ Token received: ${widget.token.substring(0, 30)}...");
+      String token = await _fetchToken(_channelId);
 
-      debugPrint("🔗 Joining channel: $_channelId with UID: ${widget.uid}");
+      debugPrint(
+          "🔗 [DOCTOR] Joining channel - ID: $_channelId, UID: ${widget.doctorUid}");
       await _engine.joinChannel(
-        token: widget.token,
+        token: token,
         channelId: _channelId,
-        uid: widget.uid,
+        uid: widget.doctorUid,
         options: ChannelMediaOptions(
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           publishCameraTrack: true,
           publishMicrophoneTrack: true,
           autoSubscribeAudio: true,
           autoSubscribeVideo: true,
-          // Force subscription to remote streams
           enableAudioRecordingOrPlayout: true,
         ),
       );
-      debugPrint("✅ Join request sent to Agora");
-
-      // Explicitly subscribe to remote audio and video
-      debugPrint("🔄 Configuring remote stream subscriptions...");
+      debugPrint("✅ [DOCTOR] Join request sent");
     } catch (e) {
-      debugPrint("❌ Error joining channel: $e");
+      debugPrint("❌ [DOCTOR] Error joining channel: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e")),
@@ -206,21 +227,24 @@ class _MainScreenState extends State<MainScreen> {
     micOn = !micOn;
     await _engine.muteLocalAudioStream(!micOn);
     setState(() {});
+    debugPrint("🔊 [DOCTOR] Microphone: ${micOn ? 'ON' : 'OFF'}");
   }
 
   void _toggleCamera() async {
     cameraOn = !cameraOn;
     await _engine.muteLocalVideoStream(!cameraOn);
     setState(() {});
+    debugPrint("🎥 [DOCTOR] Camera: ${cameraOn ? 'ON' : 'OFF'}");
   }
 
   void _switchCamera() {
     _engine.switchCamera();
+    debugPrint("🔄 [DOCTOR] Camera switched");
   }
 
   Future<void> _leaveMeeting() async {
+    debugPrint("📞 [DOCTOR] Leaving meeting...");
     await _engine.leaveChannel();
-    await _engine.release();
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -233,6 +257,7 @@ class _MainScreenState extends State<MainScreen> {
   void dispose() {
     _engine.leaveChannel();
     _engine.release();
+    debugPrint("🛑 [DOCTOR] Engine released");
     super.dispose();
   }
 
@@ -240,10 +265,21 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Patient Video Call'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('🏥 Doctor Video Call'),
+            Text('Session: $_channelId | UID: ${widget.doctorUid}',
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.normal)),
+          ],
+        ),
         actions: [
           IconButton(
-              icon: const Icon(Icons.exit_to_app), onPressed: _leaveMeeting),
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _leaveMeeting,
+            tooltip: 'End call',
+          ),
         ],
       ),
       body: Column(
@@ -251,7 +287,7 @@ class _MainScreenState extends State<MainScreen> {
           Expanded(
             child: Stack(
               children: [
-                // Remote video (doctor) – full screen
+                // Remote video (patient) – full screen
                 if (_remoteUid != null)
                   Stack(
                     children: [
@@ -276,26 +312,54 @@ class _MainScreenState extends State<MainScreen> {
                     color: Colors.black,
                     child: const Center(
                       child: Text(
-                        "⏳ Waiting for doctor to join...",
+                        "🕐 Waiting for patient to join...",
                         style: TextStyle(fontSize: 20, color: Colors.white70),
                       ),
                     ),
                   ),
 
-                // Local preview (top left)
+                // Local preview (top left - doctor's own video)
                 Align(
                   alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: 120,
-                    height: 160,
-                    child: _localUserJoined
-                        ? AgoraVideoView(
-                            controller: VideoViewController(
-                              rtcEngine: _engine,
-                              canvas: const VideoCanvas(uid: 0),
-                            ),
-                          )
-                        : const CircularProgressIndicator(),
+                  child: Container(
+                    margin: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.cyan, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SizedBox(
+                      width: 120,
+                      height: 160,
+                      child: _localUserJoined
+                          ? AgoraVideoView(
+                              controller: VideoViewController(
+                                rtcEngine: _engine,
+                                canvas: const VideoCanvas(uid: 0),
+                              ),
+                            )
+                          : const CircularProgressIndicator(),
+                    ),
+                  ),
+                ),
+
+                // Status indicator
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _remoteUid != null ? Colors.green : Colors.orange,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      _remoteUid != null ? "🟢 Connected" : "🟡 Waiting",
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -309,25 +373,30 @@ class _MainScreenState extends State<MainScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 IconButton(
-                  icon: Icon(micOn ? Icons.mic : Icons.mic_off),
+                  icon: Icon(micOn ? Icons.mic : Icons.mic_off,
+                      color: Colors.blue),
                   onPressed: _toggleMic,
                   tooltip: micOn ? 'Mute' : 'Unmute',
+                  iconSize: 32,
                 ),
                 IconButton(
-                  icon: Icon(cameraOn ? Icons.videocam : Icons.videocam_off),
+                  icon: Icon(cameraOn ? Icons.videocam : Icons.videocam_off,
+                      color: Colors.blue),
                   onPressed: _toggleCamera,
                   tooltip: cameraOn ? 'Turn off camera' : 'Turn on camera',
+                  iconSize: 32,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.cameraswitch),
+                  icon: const Icon(Icons.cameraswitch, color: Colors.blue),
                   onPressed: _switchCamera,
                   tooltip: 'Switch camera',
+                  iconSize: 32,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.call_end),
-                  color: Colors.red,
+                  icon: const Icon(Icons.call_end, color: Colors.red),
                   onPressed: _leaveMeeting,
                   tooltip: 'End call',
+                  iconSize: 32,
                 ),
               ],
             ),

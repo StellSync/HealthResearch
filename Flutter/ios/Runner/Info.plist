@@ -30,7 +30,8 @@
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationP
+		ortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
@@ -43,6 +44,13 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+
+
+	<!-- Required for Agora video/audio -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access for video calls.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access for audio during calls.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

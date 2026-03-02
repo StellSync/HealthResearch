@@ -1,14 +1,21 @@
 # Ignore everything
 *
 
-# Except the Flutter directory
+# Always track this file
+!.gitignore
+
+# Allow Flutter
 !Flutter/
-
-# But ignore all contents inside it first
 Flutter/*
-
-# Then re-allow all files and folders inside Flutter
 !Flutter/**
 
-# Keep Git tracking this file
-!.gitignore
+# Allow ML Models folder
+!Healt_Research_ML_Models/
+Healt_Research_ML_Models/*
+
+# Allow only frontend inside it
+!Healt_Research_ML_Models/frontend/
+!Healt_Research_ML_Models/frontend/**
+
+# Ignore node_modules everywhere (recommended)
+node_modules/

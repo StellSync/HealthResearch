@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:health_research/pages/therapy_video_call.dart';
+import '../services/agora_api.dart';
 
 class ScheduleSessionPage extends StatelessWidget {
   const ScheduleSessionPage({Key? key}) : super(key: key);
@@ -15,7 +16,7 @@ class ScheduleSessionPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// -------- HEADER CARD --------
+              // Header Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -50,27 +51,21 @@ class ScheduleSessionPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              /// -------- UPCOMING --------
+              // Upcoming Section
               _sectionTitle("Up Coming"),
-
               const SizedBox(height: 12),
-
               _upcomingCard(context),
 
               const SizedBox(height: 24),
 
-              /// -------- PAST --------
+              // Past Section
               _sectionTitle("Past Sessions"),
-
               const SizedBox(height: 12),
-
               _pastCard(
                   date: "1st December 2025",
                   sessionId: "S202511",
                   time: "6.30pm"),
-
               const SizedBox(height: 12),
-
               _pastCard(
                   date: "21st November 2025",
                   sessionId: "S202507",
@@ -82,7 +77,7 @@ class ScheduleSessionPage extends StatelessWidget {
     );
   }
 
-  /// -------- SECTION TITLE --------
+  // Section title
   Widget _sectionTitle(String title) {
     return Row(
       children: [
@@ -96,7 +91,7 @@ class ScheduleSessionPage extends StatelessWidget {
     );
   }
 
-  /// -------- UPCOMING CARD --------
+  // Upcoming card
   Widget _upcomingCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -136,22 +131,40 @@ class ScheduleSessionPage extends StatelessWidget {
                   style: TextStyle(fontSize: 12, color: Colors.black54)),
               const Spacer(),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TherapyVideoCall(
-                        sessionId: "S202523",
-                        token: "",
-                        isDoctor: false,
+                onPressed: () async {
+                  try {
+                    final data = await AgoraApi.getToken(
+                      sessionId: "S202523",
+                      role: "patient",
+                      uid: 1002, // Patient UID - must match Flutter patient app
+                    );
+
+                    // ─── ADD THESE PRINTS ────────────────────────────────────────
+                    print("╔════════════════════════════════════════════╗");
+                    print("║          TOKEN RESPONSE FROM BACKEND       ║");
+                    print("╚════════════════════════════════════════════╝");
+                    print("Full response: $data");
+                    print("token length: ${data['token']?.length ?? 'null'}");
+                    print("uid: ${data['uid']}");
+                    print(
+                        "channel (if any): ${data['channel'] ?? 'not returned'}");
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MainScreen(
+                          sessionId: "S202523",
+                          token: data['token'],
+                          uid: data['uid'] ?? 1002,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  } catch (e) {
+                    print("Token fetch error: $e");
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Failed to get token: $e")),
+                    );
+                  }
                 },
                 child: const Text("Join Now"),
               )
@@ -162,7 +175,7 @@ class ScheduleSessionPage extends StatelessWidget {
     );
   }
 
-  /// -------- PAST CARD --------
+  // Past card
   Widget _pastCard({
     required String date,
     required String sessionId,
@@ -200,7 +213,7 @@ class ScheduleSessionPage extends StatelessWidget {
     );
   }
 
-  /// -------- BOTTOM NAV --------
+  // Bottom navigation
   Widget _bottomNav() {
     return BottomNavigationBar(
       currentIndex: 1,
