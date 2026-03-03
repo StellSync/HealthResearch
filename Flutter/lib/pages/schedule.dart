@@ -3,6 +3,7 @@ import 'package:health_research/pages/schedule_session.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health_research/services/SessionApiService.dart';
+import 'package:health_research/pages/doctor_video_call.dart';
 
 class Schedule extends StatefulWidget {
   const Schedule({super.key});
@@ -126,7 +127,8 @@ class _ScheduleState extends State<Schedule> {
                     const SizedBox(height: 16),
                     upcomingSessions.isEmpty
                         ? _buildEmptyState('No upcoming sessions')
-                        : _buildSessionsList(upcomingSessions, isUpcoming: true),
+                        : _buildSessionsList(upcomingSessions,
+                            isUpcoming: true),
                     const SizedBox(height: 30),
                     _buildSectionHeader('Past Sessions', 'See all'),
                     const SizedBox(height: 16),
@@ -256,7 +258,8 @@ class _ScheduleState extends State<Schedule> {
     );
   }
 
-  Widget _buildSessionsList(List<dynamic> sessions, {required bool isUpcoming}) {
+  Widget _buildSessionsList(List<dynamic> sessions,
+      {required bool isUpcoming}) {
     return Column(
       children: sessions.map((session) {
         return _buildSessionCard(session, isUpcoming: isUpcoming);
@@ -351,7 +354,16 @@ class _ScheduleState extends State<Schedule> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DoctorVideoCall(
+                        sessionId: 'S202523',
+                      ),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   shape: RoundedRectangleBorder(

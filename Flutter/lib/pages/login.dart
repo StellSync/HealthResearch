@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:health_research/models/User.dart';
 import 'package:health_research/pages/baseUi.dart';
 // import 'package:thera_up/pages/base_ui.dart';
@@ -122,11 +121,9 @@ class _LoginState extends State<Login> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _inputField("email@domain.com", _emailController,
-                  'assets/icons/email.svg'),
+              _inputField("email@domain.com", _emailController),
               const SizedBox(height: 30),
               _inputField("*****************", _passwordController,
-                  'assets/icons/key.svg',
                   isPassword: true),
               const SizedBox(height: 30),
             ],
@@ -136,7 +133,7 @@ class _LoginState extends State<Login> {
     );
   }
 
-  Widget _inputField(String hint, TextEditingController controller, String icon,
+  Widget _inputField(String hint, TextEditingController controller,
       {bool isPassword = false}) {
     return TextField(
       controller: controller,

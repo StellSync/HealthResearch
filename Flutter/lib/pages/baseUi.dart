@@ -6,10 +6,10 @@ import 'package:health_research/pages/schedule.dart';
 import 'package:health_research/pages/timeSerie.dart';
 import 'package:health_research/pages/usage_stats_screen.dart';
 import 'package:health_research/pages/warebleHome.dart';
+import 'package:health_research/pages/dailyQuizes.dart';
 
 class BaseUi extends StatefulWidget {
   const BaseUi({super.key});
-
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -22,7 +22,9 @@ class _HomePageState extends State<BaseUi> {
     Dashboard(),
     Schedule(),
     QuizList(),
-    WarebleHome(),
+    // AcademicHome(),
+    // WarebleHome(),
+    DailyQuizes(),
     UsageStatsScreen(),
     // TimeSeriesDashboard(),
   ];
@@ -69,5 +71,4 @@ class _HomePageState extends State<BaseUi> {
       ),
     );
   }
-
 }

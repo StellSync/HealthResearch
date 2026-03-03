@@ -35,15 +35,16 @@ dependencies:
   fl_chart: ^0.68.0        # for nice line/bar charts (very popular)
   screen_time: ^0.10.3
   usage_stats: ^1.2.0
-  permission_handler: ^11.0.0
-  http: ^1.1.0             # for API requests
   flutter_svg: ^2.0.15
+  http: ^1.1.0             # for API requests
   flutter_launcher_icons: ^0.14.4
 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  agora_rtc_engine: ^6.5.3
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

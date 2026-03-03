@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:health_research/pages/schedule_session.dart';
+import 'package:health_research/pages/therapy_video_call.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health_research/pages/login.dart';
 import 'package:http/http.dart' as http;
@@ -118,7 +120,8 @@ class _DashboardState extends State<Dashboard> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                 ),
               ),
