@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 
 const String appId = "f84298e9180448cfb3d26e3ec61e49db";
-const String tokenServer = "http://10.33.135.43:8000/token";
+const String tokenServer = "http://10.55.234.43:8000/token";
 
 /// Doctor Video Call Screen
 /// This is used by the doctor/clinician on web/desktop

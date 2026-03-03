@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class SessionApiService {
-  static const String baseUrl = 'http://10.33.135.43:8000/api/sessions';
+  static const String baseUrl = 'http://10.55.234.43:8000/api/sessions';
 
   Future<Map<String, dynamic>> getSessions({
     String? patientId,

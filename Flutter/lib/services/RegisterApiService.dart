@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class RegisterApiService {
-  static const String baseUrl = 'http://10.33.135.43:8000/api/patients';
+  static const String baseUrl = 'http://10.55.234.43:8000/api/patients';
 
   Future<Map<String, dynamic>> registerUser({
     required String firstName,
@@ -48,7 +48,8 @@ class RegisterApiService {
       } else if (response.statusCode == 409) {
         throw Exception('Email already registered');
       } else {
-        throw Exception('Registration failed with status code: ${response.statusCode}');
+        throw Exception(
+            'Registration failed with status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Registration error: $e');

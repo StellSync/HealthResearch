@@ -7,11 +7,11 @@ class AgoraApi {
   /// Backend base URL - change this based on your environment
   /// For testing on physical device: Use the actual machine IP (e.g., 192.168.x.x or 10.x.x.x)
   /// For testing on emulator: Use 10.0.2.2 for Android emulator, or actual IP for physical device
-  static const String backendBase = "http://10.33.135.43:8000";
+  static const String backendBase = "http://10.55.234.43:8000";
 
   // Fallback URLs to try if primary fails (useful for debugging network issues)
   static const List<String> fallbackUrls = [
-    "http://10.33.135.43:8000",
+    "http://10.55.234.43:8000",
     // "http://192.168.x.x:8000",  // <-- Update with your actual machine IP if needed
     // "http://127.0.0.1:8000",     // <-- This won't work on physical devices
   ];
@@ -20,13 +20,15 @@ class AgoraApi {
   static Future<Map<String, dynamic>> getToken({
     required String sessionId,
     required String role, // doctor or patient
-    int? uid, // Optional: specific UID (1000=doctor web, 1001=doctor flutter, 1002=patient)
+    int?
+        uid, // Optional: specific UID (1000=doctor web, 1001=doctor flutter, 1002=patient)
   }) async {
     try {
       // Determine UID based on role if not explicitly provided
       int assignedUid = uid ?? (role == "doctor" ? 1001 : 1002);
-      
-      final url = Uri.parse("$backendBase/token?channel=$sessionId&uid=$assignedUid");
+
+      final url =
+          Uri.parse("$backendBase/token?channel=$sessionId&uid=$assignedUid");
 
       // Add timeout to prevent hanging forever (e.g. backend offline)
       final res = await http.get(url).timeout(
