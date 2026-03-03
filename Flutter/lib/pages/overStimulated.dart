@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:health_research/pages/physStress.dart';
 import 'package:health_research/pages/stressQuestionnaireScreen.dart';
 
-class BurnOutHome extends StatelessWidget {
-  const BurnOutHome({super.key});
+import 'overStimulatedQuestionnaire.dart';
+
+class Overstimulated extends StatelessWidget {
+  const Overstimulated({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +68,7 @@ class BurnOutHome extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const PhysStress(),
+                      builder: (context) => const OverStimulatedQuestionnaire(),
                     ),
                   );
                 },

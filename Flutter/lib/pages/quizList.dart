@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:health_research/pages/burnOutHome.dart';
+import 'package:health_research/pages/overStimulated.dart';
 import 'package:health_research/pages/warebleHome.dart';
 
 import 'academicHome.dart';
@@ -63,12 +63,12 @@ class _QuizListState extends State<QuizList> {
               const SizedBox(height: 16),
               _buildQuestCard(
                 icon: 'assets/images/burnout-quiz.png',
-                title: 'Burn out Quest',
+                title: 'Over-stimulated Quest',
                 description:
                     'Check for signs of emotional and physical exhaustion to find out if you may be experiencing burnout.',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BurnOutHome()),
+                  MaterialPageRoute(builder: (context) => const Overstimulated()),
                 ),
               ),
               const SizedBox(height: 30),
