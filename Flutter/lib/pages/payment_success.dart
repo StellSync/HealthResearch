@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:health_research/pages/baseUi.dart';
 import 'package:intl/intl.dart';
 import 'package:health_research/services/ScheduleSessionApiService.dart';
 import 'package:health_research/pages/schedule.dart';
@@ -136,7 +137,7 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const Schedule(),
+                                builder: (context) => const BaseUi(),
                               ),
                               (route) => false,
                             );

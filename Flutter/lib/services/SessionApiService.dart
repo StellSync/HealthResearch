@@ -1,8 +1,8 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class SessionApiService {
-  static const String baseUrl = 'http://10.33.135.43:8000/api/sessions';
 
   Future<Map<String, dynamic>> getSessions({
     String? patientId,
@@ -29,14 +29,11 @@ class SessionApiService {
       queryParams['limit'] = limit.toString();
       queryParams['active_only'] = activeOnly.toString();
 
-      final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+      final uri = Uri.parse(ApiConfig.sessionsUrl).replace(queryParameters: queryParams);
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: ApiConfig.defaultHeaders,
       );
 
       if (response.statusCode == 200) {

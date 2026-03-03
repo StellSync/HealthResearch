@@ -1,9 +1,8 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class RegisterApiService {
-  static const String baseUrl = 'http://10.33.135.43:8000/api/patients';
-
   Future<Map<String, dynamic>> registerUser({
     required String firstName,
     required String lastName,
@@ -17,11 +16,8 @@ class RegisterApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/register'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        Uri.parse(ApiConfig.registerUrl),
+        headers: ApiConfig.defaultHeaders,
         body: jsonEncode({
           'first_name': firstName,
           'last_name': lastName,
