@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health_research/pages/academicHome.dart';
 import 'package:health_research/pages/dashboard.dart';
+import 'package:health_research/pages/quizList.dart';
 import 'package:health_research/pages/schedule.dart';
 import 'package:health_research/pages/timeSerie.dart';
 import 'package:health_research/pages/usage_stats_screen.dart';
@@ -20,7 +21,8 @@ class _HomePageState extends State<BaseUi> {
   static List<Widget> _widgetOptions = <Widget>[
     Dashboard(),
     Schedule(),
-    AcademicHome(),
+    QuizList(),
+    // AcademicHome(),
     // WarebleHome(),
     DailyQuizes(),
     UsageStatsScreen(),

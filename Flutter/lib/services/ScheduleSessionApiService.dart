@@ -1,8 +1,8 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class ScheduleSessionApiService {
-  static const String baseUrl = 'http://10.55.234.43:8000/api/sessions';
 
   Future<Map<String, dynamic>> getAvailableDoctors({
     required String startDateTime,
@@ -14,15 +14,12 @@ class ScheduleSessionApiService {
         'end_datetime': endDateTime,
       };
 
-      final uri = Uri.parse('$baseUrl/doctors/available')
+      final uri = Uri.parse(ApiConfig.doctorsAvailableUrl)
           .replace(queryParameters: queryParams);
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: ApiConfig.defaultHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -45,11 +42,8 @@ class ScheduleSessionApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/SessionCreate'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        Uri.parse(ApiConfig.sessionCreateUrl),
+        headers: ApiConfig.defaultHeaders,
         body: jsonEncode({
           'doctor_id': doctorId,
           'doctor_name': doctorName,

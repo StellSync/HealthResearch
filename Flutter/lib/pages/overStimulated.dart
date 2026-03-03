@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:health_research/pages/physStress.dart';
 import 'package:health_research/pages/stressQuestionnaireScreen.dart';
 
-class AcademicHome extends StatelessWidget {
-  const AcademicHome({super.key});
+import 'overStimulatedQuestionnaire.dart';
+
+class Overstimulated extends StatelessWidget {
+  const Overstimulated({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +16,7 @@ class AcademicHome extends StatelessWidget {
         backgroundColor: Colors.white,
         centerTitle: true,
         title: const Text(
-          'Academic Life',
+          'Burnout',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
@@ -26,7 +29,7 @@ class AcademicHome extends StatelessWidget {
             children: [
               // 🖼️ Illustration Image
               Image.asset(
-                'assets/images/academic.png',
+                'assets/images/burnout.jpg',
                 height: 270,
               ),
 
@@ -34,7 +37,7 @@ class AcademicHome extends StatelessWidget {
 
               // 📄 Description Text
               Text(
-                "Academic stress management is about finding healthy ways to balance your workload, maintain focus, and protect your well-being. It involves planning your tasks early, breaking big assignments into smaller steps, and setting realistic goals. Good habits like taking short breaks, staying organized, getting enough sleep, and talking to someone when you feel overwhelmed can make a big difference.",
+                "Burnout is a state of emotional, mental, and physical exhaustion caused by prolonged stress, often related to school, work, or personal responsibilities. It can make you feel drained, unmotivated, irritable, and disconnected from things you usually care about. Taking burnout seriously is important for mental health because ignoring it can lead to anxiety, depression, and ongoing stress. Prioritizing rest, setting boundaries, and making time for activities you enjoy helps protect your well-being and keeps your mind healthier and more balanced over time.",
                 textAlign: TextAlign.justify,
                 style: TextStyle(
                   fontSize: 14,
@@ -65,7 +68,7 @@ class AcademicHome extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const StressQuestionnaireScreen(),
+                      builder: (context) => const OverStimulatedQuestionnaire(),
                     ),
                   );
                 },
@@ -98,7 +101,7 @@ class AcademicHome extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              "Academic Stress Quest",
+                              "Burnout Quest ",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -106,7 +109,7 @@ class AcademicHome extends StatelessWidget {
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              "Check your work-life balance and daily stress level.",
+                              "Check for signs of emotional and physical exhaustion to find out if you may be experiencing burnout.",
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey[700],

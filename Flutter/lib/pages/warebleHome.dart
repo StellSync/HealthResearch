@@ -10,7 +10,6 @@ class WarebleHome extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: true,
@@ -100,7 +99,7 @@ class WarebleHome extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              " Daily Stress Quest ",
+                              "Stress Quest ",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -108,7 +107,7 @@ class WarebleHome extends StatelessWidget {
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              "Check your work-life balance and daily stress level.",
+                              "Explore your daily habits, routines, and lifestyle choices to see how they influence your mental wellbeing.",
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey[700],

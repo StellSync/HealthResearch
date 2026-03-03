@@ -17,9 +17,37 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
     final q = _questions[_currentIndex];
     final type = q['type'];
 
-    if (type == 'choice' || type == 'frequency_grid') {
+    // Choice-based types
+    if (type == 'choice' || type == 'frequency_grid' || type == 'yes_no') {
       return answer != null;
     }
+
+    // Rating scale
+    if (type == 'rating_scale') {
+      return answer is int && answer > 0;
+    }
+
+    // Slider (0-100 or custom range)
+    if (type == 'slider') {
+      return answer != null;
+    }
+
+    // Percentage (0-100)
+    if (type == 'percentage') {
+      return answer is int && answer >= 0 && answer <= 100;
+    }
+
+    // Text input
+    if (type == 'text_input') {
+      return answer is String && answer.isNotEmpty;
+    }
+
+    // Time input (HH:MM format)
+    if (type == 'time_input') {
+      return answer is String && RegExp(r'^\d{1,2}:\d{2}$').hasMatch(answer);
+    }
+
+    // Numeric inputs
     if (type == 'number_1_10') {
       return answer is int && answer >= 1 && answer <= 10;
     }
@@ -32,10 +60,105 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
     if (type == 'gpa') {
       return answer is double && answer >= 0 && answer <= 4.0;
     }
+
     return false;
   }
 
+  /// Get all answers in a structured format
+  Map<String, dynamic> get _answersData {
+    return {
+      'Noise_Exposure': _mapFrequencyGridAnswer(_answers[0], 4) ?? 0,
+      'Social_Interaction': _answers[1] ?? 0,
+      'Work_Hours': _answers[2] ?? 0,
+      'Exercise_Hours': _answers[3] ?? 0,
+      'Caffeine_Intake': _mapFrequencyGridAnswer(_answers[4], 4) ?? 0,
+      'Multitasking_Habit': _answers[5] == 'Yes (1)' ? 1 : 0,
+      'Sensory_Sensitivity': _answers[6] ?? 0,
+      'Meditation_Habit': _answers[7] == 'Yes (1)' ? 1 : 0,
+      'Overthinking_Score': _answers[8] ?? 0,
+      'Irritability_Score': _answers[9] ?? 0,
+      'Headache_Frequency': _mapFrequencyGridAnswer(_answers[10], 6) ?? 0,
+      'Sleep_Quality': _mapSleepQuality(_answers[11]) ?? 0,
+      'Tech_Usage_Hours': _answers[12] ?? 0,
+      'GPA': _answers[13] ?? 0.0,
+      'Prev_GPA': _answers[14] ?? 0.0,
+      'GPA_trend': (_answers[13] ?? 0.0) - (_answers[14] ?? 0.0),
+      'Modules': _answers[15] ?? 0,
+      'Assignments_total': _answers[16] ?? 0,
+      'Deadlines_next_7_days': _answers[17] ?? 0,
+      'Study_hours_per_day': _answers[18] ?? 0,
+      'Attendance_pct': _answers[19] ?? 0.0,
+    };
+  }
+
+  /// Map frequency grid answer to numeric value
+  int? _mapFrequencyGridAnswer(dynamic answer, int maxValue) {
+    if (answer == null) return null;
+
+    // For Noise_Exposure (4 options -> 0-3)
+    if (maxValue == 4) {
+      const options = ['Very Quiet', 'Low Noise', 'Medium Noise', 'Very Noisy'];
+      final index = options.indexOf(answer.toString());
+      return index >= 0 ? index : null;
+    }
+
+    // For Headache_Frequency (6 options -> 0-5)
+    if (maxValue == 6) {
+      const options = ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often', 'Always'];
+      final index = options.indexOf(answer.toString());
+      return index >= 0 ? index : null;
+    }
+
+    return null;
+  }
+
+  /// Map sleep quality answer to numeric value (0-5)
+  int? _mapSleepQuality(dynamic answer) {
+    if (answer == null) return null;
+
+    const Map<String, int> sleepMap = {
+      'Very Poor': 0,
+      'Poor': 1,
+      'Fair': 2,
+      'Good': 3,
+      'Very Good': 4,
+      'Excellent': 5,
+    };
+
+    return sleepMap[answer.toString()];
+  }
+
   final List<Map<String, dynamic>> _questions = [
+    // Academic Stress Questions
+    {
+      'title': 'How noisy is your daily environment?',
+      'image': 'assets/images/question_noise.png',
+      'type': 'frequency_grid',
+      'options': ['Very Quiet', 'Low Noise', 'Medium Noise', 'Very Noisy'],
+      'key': 'Noise_Exposure',
+      'range': '0-5',
+    },
+    {
+      'title': 'On a scale of 1-10, how socially active are you?',
+      'image': 'assets/images/question_social.jpg',
+      'type': 'number_1_10',
+      'key': 'Social_Interaction',
+      'range': '0-10',
+    },
+    {
+      'title': 'How many hours per day do you work at a job?',
+      'image': 'assets/images/question_work.png',
+      'type': 'number_hours',
+      'key': 'Work_Hours',
+      'range': '0-24',
+    },
+    {
+      'title': 'How many hours per day do you exercise?',
+      'image': 'assets/images/question_exercise.jpg',
+      'type': 'number_hours_day',
+      'key': 'Exercise_Hours',
+      'range': '0-6',
+    },
     {
       'title': 'How much caffeine do you take in a day?',
       'image': 'assets/images/question_caffeine.jpg',
@@ -43,78 +166,113 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       'options': [
         'Less than 1 Energy drinks/Coffees',
         'Less than 2 Energy drinks/Coffees',
-        'Less than 5 Energy drinks/Coffees',
-        'More than 5 Energy drinks/Coffees',
+        'Less than 3 Energy drinks/Coffees',
+        'More than 4 Energy drinks/Coffees',
       ],
+      'key': 'Caffeine_Intake',
+      'range': '0-5',
     },
     {
-      'title': 'On a scale of 1-10, how stressed do you usually feel?',
+      'title': 'On a scale of 0-1, do you have a multitasking habit?',
+      'image': 'assets/images/question_work.png',
+      'type': 'choice',
+      'options': ['No', 'Yes'],
+      'key': 'Multitasking_Habit',
+      'range': '0-1',
+    },
+    {
+      'title': 'On a scale of 1-10, how sensitive are you to sensory stimuli?',
+      'image': 'assets/images/question_noise.png',
+      'type': 'number_1_10',
+      'key': 'Sensory_Sensitivity',
+      'range': '0-10',
+    },
+    {
+      'title': 'On a scale of 0-1, do you have a meditation habit?',
+      'image': 'assets/images/question_exercise2.jpg',
+      'type': 'choice',
+      'options': ['No', 'Yes'],
+      'key': 'Meditation_Habit',
+      'range': '0-1',
+    },
+    {
+      'title': 'On a scale of 1-10, how much do you overthink?',
       'image': 'assets/images/question_stressed.jpg',
       'type': 'number_1_10',
+      'key': 'Overthinking_Score',
+      'range': '0-10',
     },
     {
-      'title': 'How noisy is your daily environment?',
-      'image': 'assets/images/question_noise.png',
-      'type': 'frequency_grid',
-      'options': ['Very Quiet', 'Low Noise', 'Medium Noise', 'Very Noisy'],
-    },
-    {
-      'title': 'On a scale of 1-10, how socially active are you?',
-      'image': 'assets/images/question_social.jpg',
-      'type': 'number_1_10',
-    },
-    {
-      'title': 'How many hours per week do you work at a job?',
-      'image': 'assets/images/question_work.png',
-      'type': 'number_hours',
-    },
-    {
-      'title': 'How many hours per week do you exercise?',
-      'image': 'assets/images/question_exercise.jpg',
-      'type': 'number_hours',
-    },
-    {
-      'title': 'Over the past week, how often have you felt anxious, nervous, or on edge?',
-      'image': 'assets/images/question_anxiety.jpg',
-      'type': 'frequency_grid',
-      'options': [
-        'Rarely or not at all',
-        'Occasionally',
-        'Frequently',
-        'Almost constantly',
-      ],
-    },
-    {
-      'title': 'How often have you felt sad, hopeless, or lost interest in things you usually enjoy?',
-      'image': 'assets/images/question_sadness.jpg',
-      'type': 'frequency_grid',
-      'options': [
-        'Not at all',
-        'Sometimes',
-        'Often',
-        'Nearly every day',
-      ],
+      'title': 'How frequently do you experience headaches (0-6 scale)?',
+      'image': 'assets/images/question_health.png',
+      'type': 'choice',
+      'options': ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often', 'Always'],
+      'key': 'Headache_Frequency',
+      'range': '0-6',
     },
     {
       'title': 'How would you rate your sleep quality over the past week?',
       'image': 'assets/images/question_sleep.jpg',
       'type': 'choice',
-      'options': ['Very Poor', 'Poor', 'Fair', 'Good', 'Excellent'],
+      'options': ['Very Poor', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+      'key': 'Sleep_Quality',
+      'range': '0-6',
     },
     {
       'title': 'On a typical day, how many total hours do you spend using technology (excluding academic classes)?',
       'image': 'assets/images/question_tech.jpg',
-      'type': 'number_hours_day', // ← changed as requested
+      'type': 'number_hours_day',
+      'key': 'Tech_Usage_Hours',
+      'range': '0-24',
     },
     {
       'title': 'Current Grade Point Average (GPA)',
       'image': 'assets/images/question_gpa.jpg',
       'type': 'gpa',
+      'key': 'GPA',
+      'range': '0.0-4.0',
     },
     {
-      'title': 'Grade Point Average from the previous academic term',
-      'image': 'assets/images/question_gpa_2.png',
+      'title': 'Previous Grade Point Average (GPA)',
+      'image': 'assets/images/question_gpa.jpg',
       'type': 'gpa',
+      'key': 'Prev_GPA',
+      'range': '0.0-4.0',
+    },
+    {
+      'title': 'How many modules are you currently taking?',
+      'image': 'assets/images/academic.png',
+      'type': 'number_1_10',
+      'key': 'Modules',
+      'range': '1-10',
+    },
+    {
+      'title': 'How many total assignments do you have this term?',
+      'image': 'assets/images/file_icon.png',
+      'type': 'number_1_10',
+      'key': 'Assignments_total',
+      'range': '0-10',
+    },
+    {
+      'title': 'How many deadlines do you have in the next 7 days?',
+      'image': 'assets/images/file_icon.png',
+      'type': 'number_1_10',
+      'key': 'Deadlines_next_7_days',
+      'range': '0-10',
+    },
+    {
+      'title': 'On a typical day, how many total hours do you study?',
+      'image': 'assets/images/question_education.jpg',
+      'type': 'number_hours_day',
+      'key': 'Study_hours_per_day',
+      'range': '0-24',
+    },
+    {
+      'title': 'What is your current attendance percentage?',
+      'image': 'assets/images/question_parttime.jpeg',
+      'type': 'percentage',
+      'key': 'Attendance_pct',
+      'range': '0-100',
     },
   ];
 
@@ -154,9 +312,23 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
     if (_currentIndex < _questions.length - 1) {
       setState(() => _currentIndex++);
     } else {
+      // Questionnaire completed - show all answers
+      final allAnswers = _answersData;
+
+      print('=== QUESTIONNAIRE COMPLETED ===');
+      print('All Answers:');
+      allAnswers.forEach((key, value) {
+        print('  $key: $value');
+      });
+      print('==============================');
+
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Questionnaire completed! 🎉')),
+        SnackBar(
+          content: const Text('Questionnaire completed! 🎉'),
+          backgroundColor: Colors.green[700],
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -260,7 +432,35 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
     final type = q['type'];
     final value = _answers[_currentIndex];
 
-    // ── Frequency Grid (2×2) ───────────────────────────────────────
+    // ── YES/NO Choice ──────────────────────────────────────────────
+    if (type == 'yes_no') {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: ['Yes', 'No'].map((opt) {
+          final selected = value == opt;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SizedBox(
+              width: 120,
+              child: ElevatedButton(
+                onPressed: () => _onChoiceSelected(opt),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: selected ? Colors.blue[700] : Colors.grey[200],
+                  foregroundColor: selected ? Colors.white : Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(opt, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+
+    // ── Frequency Grid (2×2 or custom) ─────────────────────────────
     if (type == 'frequency_grid') {
       final options = q['options'] as List<String>;
       return GridView.count(
@@ -278,10 +478,10 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
             onTap: () => _onChoiceSelected(opt),
             child: Container(
               decoration: BoxDecoration(
-                color: selected ? Color(0xa3bdbaba) : Colors.grey[100],
+                color: selected ? Colors.blue[100] : Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? Color(0xff000000)! : Colors.grey[300]!,
+                  color: selected ? Colors.blue[700]! : Colors.grey[300]!,
                   width: selected ? 2 : 1,
                 ),
               ),
@@ -290,9 +490,9 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               child: Text(
                 opt,
                 style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w600,
-                  color:  Colors.black87,
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -314,18 +514,18 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(opt),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Color(0xa3bdbaba) : Colors.grey[100],
+                  backgroundColor: selected ? Colors.blue[100] : Colors.grey[100],
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: selected ? Colors.black : Colors.grey.shade300,
-                      width: 1.5,
+                      color: selected ? Colors.blue[700]! : Colors.grey.shade300,
+                      width: 2,
                     ),
                   ),
                 ),
-                child: Text(opt, style: const TextStyle(fontSize: 16)),
+                child: Text(opt, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
           );
@@ -333,7 +533,196 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       );
     }
 
-    // ── Numeric inputs ──────────────────────────────────────────────
+    // ── Rating Scale (1-5 stars or emoji) ──────────────────────────
+    if (type == 'rating_scale') {
+      final maxRating = q['max_rating'] ?? 5;
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(maxRating, (index) {
+              final isSelected = (value ?? 0) == (index + 1);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: GestureDetector(
+                  onTap: () => _answers[_currentIndex] = index + 1,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.amber[400] : Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? Colors.amber[700]! : Colors.grey[300]!,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      '⭐',
+                      style: TextStyle(
+                        fontSize: isSelected ? 28 : 20,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Rating: ${value ?? 0}/$maxRating',
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ],
+      );
+    }
+
+    // ── Slider (0-100) ─────────────────────────────────────────────
+    if (type == 'slider') {
+      final max = (q['max'] ?? 100).toDouble();
+      final min = (q['min'] ?? 0).toDouble();
+      final currentValue = (value ?? min).toDouble();
+      return Column(
+        children: [
+          Slider(
+            value: currentValue.clamp(min, max),
+            min: min,
+            max: max,
+            divisions: ((max - min) ~/ 5).toInt(),
+            activeColor: Colors.blue[700],
+            inactiveColor: Colors.grey[300],
+            onChanged: (v) => setState(() => _answers[_currentIndex] = v.toInt()),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${currentValue.toInt()}/${max.toInt()}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ],
+      );
+    }
+
+    // ── Percentage Input ───────────────────────────────────────────
+    if (type == 'percentage') {
+      return Column(
+        children: [
+          SizedBox(
+            width: 200,
+            child: TextField(
+              keyboardType: const TextInputType.numberWithOptions(decimal: false),
+              key: ValueKey('percentage_input_$_currentIndex'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                suffixText: '%',
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.blue[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                ),
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+              onChanged: (v) {
+                final num = int.tryParse(v);
+                if (num != null && num >= 0 && num <= 100) {
+                  setState(() {
+                    _answers[_currentIndex] = num;
+                  });
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Enter percentage (0-100)',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ],
+      );
+    }
+
+    // ── Text Input ─────────────────────────────────────────────────
+    if (type == 'text_input') {
+      return Column(
+        children: [
+          TextField(
+            key: ValueKey('text_input_$_currentIndex'),
+            decoration: InputDecoration(
+              hintText: 'Enter your response',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.blue, width: 2),
+              ),
+            ),
+            maxLines: 3,
+            onChanged: (v) {
+              setState(() {
+                _answers[_currentIndex] = v;
+              });
+            },
+          ),
+        ],
+      );
+    }
+
+    // ── Time Input (HH:MM) ─────────────────────────────────────────
+    if (type == 'time_input') {
+      return Column(
+        children: [
+          SizedBox(
+            width: 200,
+            child: TextField(
+              keyboardType: TextInputType.datetime,
+              key: ValueKey('time_input_$_currentIndex'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'HH:MM',
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                ),
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              onChanged: (v) {
+                if (v.length == 4) {
+                  final hour = int.tryParse(v.substring(0, 2));
+                  final min = int.tryParse(v.substring(2, 4));
+                  if (hour != null && min != null && hour >= 0 && hour < 24 && min >= 0 && min < 60) {
+                    setState(() {
+                      _answers[_currentIndex] = '$hour:${min.toString().padLeft(2, '0')}';
+                    });
+                  }
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Enter time in HH:MM format',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ],
+      );
+    }
+
+    // ── Default Numeric inputs ──────────────────────────────────────
     String hint = 'Enter value';
     String label = '';
     int? maxLen = 3;

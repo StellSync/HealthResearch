@@ -1,18 +1,14 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:health_research/models/User.dart';
+import 'package:health_research/config/api_config.dart';
 
 class UserApiService {
-  static const String baseUrl = 'http://10.55.234.43:8000/api/patients';
-
   Future<User?> loginUser(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        Uri.parse(ApiConfig.loginUrl),
+        headers: ApiConfig.defaultHeaders,
         body: jsonEncode({
           'email': email,
           'password': password,

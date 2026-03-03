@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:health_research/pages/baseUi.dart';
 import 'package:health_research/pages/dashboard.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
@@ -248,7 +249,7 @@ class _DoctorVideoCallState extends State<DoctorVideoCall> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const Dashboard()),
+        MaterialPageRoute(builder: (_) => const BaseUi()),
       );
     }
   }
@@ -312,7 +313,7 @@ class _DoctorVideoCallState extends State<DoctorVideoCall> {
                     color: Colors.black,
                     child: const Center(
                       child: Text(
-                        "🕐 Waiting for patient to join...",
+                        "🕐 Waiting for Doctor to join...",
                         style: TextStyle(fontSize: 20, color: Colors.white70),
                       ),
                     ),

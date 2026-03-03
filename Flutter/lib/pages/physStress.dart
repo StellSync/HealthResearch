@@ -26,93 +26,164 @@ class _PhysStressState extends State<PhysStress> {
     if (type == 'number_hours_week') {
       return answer is int && answer >= 0 && answer <= 168;
     }
+    if (type == 'number_bmi') {
+      return answer is double && answer > 0 && answer < 100;
+    }
     return false;
   }
 
   final List<Map<String, dynamic>> _questions = [
-    // Q1
+    // Q1: BMI
+    {
+      'title': 'What is your BMI?',
+      'image': 'assets/images/question_health.png',
+      'type': 'number_bmi',
+      'key': 'bmi',
+    },
+    // Q2: Physical Activity
     {
       'title': 'How many minutes per week do you usually exercise?',
       'image': 'assets/images/question_exercise2.jpg',
       'type': 'number_minutes_week',
+      'key': 'physact',
+      'range': '0-20',
     },
-    // Q2
+    // Q3: Overall Health
     {
       'title': 'How would you rate your overall health?',
-      'image': 'assets/images/question_health.png', // Use a health-related image
+      'image': 'assets/images/question_health.png',
       'type': 'grid_2x2',
-      'options': ['Excellent', 'Good', 'Fair', 'Poor'],
+      'key': 'health',
+      'range': '0-5',
+      'options': [
+        {'text': 'Poor', 'value': 0},
+        {'text': 'Fair', 'value': 1},
+        {'text': 'Good', 'value': 2},
+        {'text': 'Very Good', 'value': 3},
+        {'text': 'Excellent', 'value': 4},
+      ],
     },
-    // Q3
+    // Q4: Emotional Distress
     {
       'title': 'In the past two weeks, how often have you felt emotionally distressed?',
       'image': 'assets/images/question_sadness.jpg',
       'type': 'grid_2x2',
+      'key': 'psyt',
+      'range': '0-4',
       'options': [
-        'Not at all',
-        'Several days',
-        'Over half the days',
-        'Nearly every day',
+        {'text': 'Never', 'value': 0},
+        {'text': 'Rarely', 'value': 1},
+        {'text': 'Sometimes', 'value': 2},
+        {'text': 'Often', 'value': 3},
+        {'text': 'Always', 'value': 4},
       ],
     },
-    // Q4
+    // Q5: Emotional Coping
     {
-      'title': 'When stressed, how often do you try to manage your emotions?',
+      'title': 'When stressed, how often do you try to manage your emotions (e.g., venting, distraction)?',
       'image': 'assets/images/question_emotions.png',
       'type': 'grid_2x2',
-      'options': ['Never', 'Sometimes', 'Often', 'Always'],
+      'key': 'cop_e',
+      'range': '0-20',
+      'options': [
+        {'text': 'Never', 'value': 0},
+        {'text': 'Rarely', 'value': 5},
+        {'text': 'Sometimes', 'value': 10},
+        {'text': 'Often', 'value': 15},
+        {'text': 'Always', 'value': 20},
+      ],
     },
-    // Q5
+    // Q6: Problem-Focused Coping
     {
       'title': 'When stressed, how often do you try to solve the problem directly?',
       'image': 'assets/images/question_problem_solving.jpg',
       'type': 'grid_2x2',
-      'options': ['Never', 'Sometimes', 'Often', 'Always'],
+      'key': 'cop_p',
+      'range': '0-20',
+      'options': [
+        {'text': 'Never', 'value': 0},
+        {'text': 'Rarely', 'value': 5},
+        {'text': 'Sometimes', 'value': 10},
+        {'text': 'Often', 'value': 15},
+        {'text': 'Always', 'value': 20},
+      ],
     },
-    // Q6
-    {
-      'title': 'Do you work part-time?',
-      'image': 'assets/images/question_parttime.jpeg',
-      'type': 'choice',
-      'options': ['Yes', 'No'],
-    },
-    // Q7
-    {
-      'title': 'How often do you have someone to talk to when you need support?',
-      'image': 'assets/images/question_support.png',
-      'type': 'grid_2x2',
-      'options': ['Never', 'Sometimes', 'Often', 'Always'],
-    },
-    // Q8
+    // Q7: Healthy Coping Strategies
     {
       'title': 'How often do you use healthy strategies to cope (exercise, meditation, sleep)?',
       'image': 'assets/images/question_coping.png',
       'type': 'grid_2x2',
-      'options': ['Never', 'Sometimes', 'Often', 'Always'],
+      'key': 'cop_h',
+      'range': '0-20',
+      'options': [
+        {'text': 'Never', 'value': 0},
+        {'text': 'Rarely', 'value': 5},
+        {'text': 'Sometimes', 'value': 10},
+        {'text': 'Often', 'value': 15},
+        {'text': 'Always', 'value': 20},
+      ],
     },
-    // Q9
+    // Q8: Part-Time Work
+    {
+      'title': 'Do you work part-time?',
+      'image': 'assets/images/question_parttime.jpeg',
+      'type': 'choice',
+      'key': 'part',
+      'range': '0-1',
+      'options': [
+        {'text': 'No', 'value': 0},
+        {'text': 'Yes', 'value': 1},
+      ],
+    },
+    // Q9: Social Support
+    {
+      'title': 'How often do you have someone to talk to when you need support?',
+      'image': 'assets/images/question_support.png',
+      'type': 'grid_2x2',
+      'key': 'socsup',
+      'range': '0-10',
+      'options': [
+        {'text': 'Never', 'value': 0},
+        {'text': 'Rarely', 'value': 2},
+        {'text': 'Sometimes', 'value': 5},
+        {'text': 'Often', 'value': 7},
+        {'text': 'Always', 'value': 10},
+      ],
+    },
+    // Q10: Parent Education Level
     {
       'title': 'What is the highest education level completed by your parent or guardian?',
       'image': 'assets/images/question_education.jpg',
       'type': 'grid_2x2',
+      'key': 'educ_par',
+      'range': '0-5',
       'options': [
-        'Less than high school',
-        'High school',
-        "Bachelor's",
-        'Postgraduate',
+        {'text': 'Less than high school', 'value': 0},
+        {'text': 'High school', 'value': 1},
+        {'text': 'Diploma', 'value': 2},
+        {'text': "Bachelor's", 'value': 3},
+        {'text': 'Postgraduate', 'value': 4},
+        {'text': "Don't know", 'value': 5},
       ],
     },
-    // Q10
+    // Q11: Job Hours
     {
       'title': 'How many hours per week do you work at a job?',
       'image': 'assets/images/question_work.png',
       'type': 'number_hours_week',
+      'key': 'jobhours',
+      'range': '0-50',
     },
   ];
 
   void _onChoiceSelected(dynamic value) {
     setState(() {
-      _answers[_currentIndex] = value;
+      // Handle both string and map options
+      if (value is Map) {
+        _answers[_currentIndex] = value['value'];
+      } else {
+        _answers[_currentIndex] = value;
+      }
     });
   }
 
@@ -123,11 +194,18 @@ class _PhysStressState extends State<PhysStress> {
       return;
     }
 
-    final n = int.tryParse(value);
-    if (n != null) {
-      if ((type == 'number_minutes_week' && n >= 0 && n <= 1440) ||
-          (type == 'number_hours_week' && n >= 0 && n <= 168)) {
+    if (type == 'number_bmi') {
+      final n = double.tryParse(value);
+      if (n != null && n > 0 && n < 100) {
         _answers[_currentIndex] = n;
+      }
+    } else {
+      final n = int.tryParse(value);
+      if (n != null) {
+        if ((type == 'number_minutes_week' && n >= 0 && n <= 1440) ||
+            (type == 'number_hours_week' && n >= 0 && n <= 168)) {
+          _answers[_currentIndex] = n;
+        }
       }
     }
     setState(() {});
@@ -255,18 +333,22 @@ class _PhysStressState extends State<PhysStress> {
 
     // ── 2x2 Grid (most questions) ───────────────────────────────────
     if (type == 'grid_2x2' || type == 'frequency_grid') {
-      final options = q['options'] as List<String>;
+      final options = (q['options'] as List? ?? []);
       return GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1.2, // taller boxes
-        children: options.map((opt) {
-          final selected = value == opt;
+        childAspectRatio: 1.2,
+        children: options.map((option) {
+          // Handle both string options and map options with value property
+          final optText = option is Map ? option['text'] : option;
+          final optValue = option is Map ? option['value'] : option;
+          final selected = value == optValue;
+
           return GestureDetector(
-            onTap: () => _onChoiceSelected(opt),
+            onTap: () => _onChoiceSelected(option),
             child: Container(
               decoration: BoxDecoration(
                 color: selected ? const Color(0xA3BDBABA) : Colors.grey[100],
@@ -279,7 +361,7 @@ class _PhysStressState extends State<PhysStress> {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
               child: Text(
-                opt,
+                optText,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
@@ -295,17 +377,22 @@ class _PhysStressState extends State<PhysStress> {
 
     // ── Regular Choice (vertical buttons) ───────────────────────────
     if (type == 'choice') {
+      final options = (q['options'] as List? ?? []);
       return Column(
-        children: (q['options'] as List<String>).map((opt) {
-          final selected = value == opt;
+        children: options.map((option) {
+          // Handle both string options and map options with value property
+          final optText = option is Map ? option['text'] : option;
+          final optValue = option is Map ? option['value'] : option;
+          final selected = value == optValue;
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _onChoiceSelected(opt),
+                onPressed: () => _onChoiceSelected(option),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Color(0xa3bdbaba) : Colors.grey[100],
+                  backgroundColor: selected ? const Color(0xa3bdbaba) : Colors.grey[100],
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -316,11 +403,51 @@ class _PhysStressState extends State<PhysStress> {
                     ),
                   ),
                 ),
-                child: Text(opt, style: const TextStyle(fontSize: 16)),
+                child: Text(optText, style: const TextStyle(fontSize: 16)),
               ),
             ),
           );
         }).toList(),
+      );
+    }
+
+    // ── BMI Input (decimal number) ──────────────────────────────────
+    if (type == 'number_bmi') {
+      return Column(
+        children: [
+          SizedBox(
+            width: 220,
+            child: TextField(
+              key: ValueKey('bmi_input_$_currentIndex'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: '0.0',
+                suffixText: 'kg/m²',
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.blue[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                ),
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}')),
+                LengthLimitingTextInputFormatter(6),
+              ],
+              onChanged: (v) => _onNumberChanged(v, type),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Body Mass Index',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ],
       );
     }
 

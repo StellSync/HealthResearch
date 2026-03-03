@@ -2,18 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:health_research/config/api_config.dart';
 
 class AgoraApi {
-  /// Backend base URL - change this based on your environment
-  /// For testing on physical device: Use the actual machine IP (e.g., 192.168.x.x or 10.x.x.x)
-  /// For testing on emulator: Use 10.0.2.2 for Android emulator, or actual IP for physical device
-  static const String backendBase = "http://10.55.234.43:8000";
+  /// Backend base URL - dynamically retrieved from ApiConfig
+  /// This allows easy switching between dev, staging, and production servers
+  /// Change the baseUrl in lib/config/api_config.dart to switch servers
+  static String get backendBase => ApiConfig.baseUrl;
 
   // Fallback URLs to try if primary fails (useful for debugging network issues)
   static const List<String> fallbackUrls = [
-    "http://10.55.234.43:8000",
-    // "http://192.168.x.x:8000",  // <-- Update with your actual machine IP if needed
-    // "http://127.0.0.1:8000",     // <-- This won't work on physical devices
+    // Fallback URLs can be added here if needed
+    // The primary URL will be used from ApiConfig.baseUrl
   ];
 
   /// Fetch token from backend with timeout and better error handling
