@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:health_research/pages/burnOutHome.dart';
+import 'package:health_research/pages/warebleHome.dart';
 
 import 'academicHome.dart';
 
@@ -53,7 +55,10 @@ class _QuizListState extends State<QuizList> {
                 title: 'Behavioural Quest',
                 description:
                     'Explore your daily habits, routines, and lifestyle choices to see how they influence your mental wellbeing and stress.',
-                onTap: () => _onQuestTap('Behavioural Quest'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WarebleHome()),
+                ),
               ),
               const SizedBox(height: 16),
               _buildQuestCard(
@@ -61,7 +66,10 @@ class _QuizListState extends State<QuizList> {
                 title: 'Burn out Quest',
                 description:
                     'Check for signs of emotional and physical exhaustion to find out if you may be experiencing burnout.',
-                onTap: () => _onQuestTap('Burn out Quest'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BurnOutHome()),
+                ),
               ),
               const SizedBox(height: 30),
             ],

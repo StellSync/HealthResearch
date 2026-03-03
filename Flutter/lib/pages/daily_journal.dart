@@ -33,7 +33,7 @@ class _DailyJournalState extends State<DailyJournal> {
           children: [
             CircleAvatar(
               radius: 60,
-              backgroundImage: const AssetImage("assets/images/journal.png"),
+              backgroundImage: const AssetImage("assets/images/academic-quiz.png"),
             ),
             const SizedBox(height: 20),
             const Align(

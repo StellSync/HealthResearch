@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:health_research/pages/physStress.dart';
 import 'package:health_research/pages/stressQuestionnaireScreen.dart';
 
-class WarebleHome extends StatelessWidget {
-  const WarebleHome({super.key});
+class BurnOutHome extends StatelessWidget {
+  const BurnOutHome({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class WarebleHome extends StatelessWidget {
         backgroundColor: Colors.white,
         centerTitle: true,
         title: const Text(
-          'Physical Activities',
+          'Burnout',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
@@ -27,7 +27,7 @@ class WarebleHome extends StatelessWidget {
             children: [
               // 🖼️ Illustration Image
               Image.asset(
-                'assets/images/physical_activities.png',
+                'assets/images/burnout.jpg',
                 height: 270,
               ),
 
@@ -35,7 +35,7 @@ class WarebleHome extends StatelessWidget {
 
               // 📄 Description Text
               Text(
-                "Physical activity has a strong positive impact on stress and mood because it helps regulate key factors that influence overall well-being. Regular exercise improves sleep quality, stabilizes heart rate, and reduces the physical tension caused by stress. It can also help offset the negative effects of long screen time, high caffeine intake, and an unhealthy BMI by boosting energy levels and improving hormonal balance. Even simple activities like walking, stretching, or playing a sport can release endorphins, lower anxiety, and make you feel more relaxed and mentally refreshed.",
+                "Burnout is a state of emotional, mental, and physical exhaustion caused by prolonged stress, often related to school, work, or personal responsibilities. It can make you feel drained, unmotivated, irritable, and disconnected from things you usually care about. Taking burnout seriously is important for mental health because ignoring it can lead to anxiety, depression, and ongoing stress. Prioritizing rest, setting boundaries, and making time for activities you enjoy helps protect your well-being and keeps your mind healthier and more balanced over time.",
                 textAlign: TextAlign.justify,
                 style: TextStyle(
                   fontSize: 14,
@@ -99,7 +99,7 @@ class WarebleHome extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              "Stress Quest ",
+                              "Burnout Quest ",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -107,7 +107,7 @@ class WarebleHome extends StatelessWidget {
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              "Explore your daily habits, routines, and lifestyle choices to see how they influence your mental wellbeing.",
+                              "Check for signs of emotional and physical exhaustion to find out if you may be experiencing burnout.",
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey[700],

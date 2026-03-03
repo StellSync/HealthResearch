@@ -57,7 +57,7 @@ class DailyQuizes extends StatelessWidget {
               context,
               title: "Daily Journal",
               subtitle: "Express your thoughts • Reflect • Release",
-              image: "assets/images/journal.png",
+              image: "assets/images/academic-quiz.png",
               page: const DailyJournal(),
               highlight: true,
               color: const Color(0xFFFFCA28), // warm amber
