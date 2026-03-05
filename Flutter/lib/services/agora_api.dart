@@ -20,13 +20,15 @@ class AgoraApi {
   static Future<Map<String, dynamic>> getToken({
     required String sessionId,
     required String role, // doctor or patient
-    int? uid, // Optional: specific UID (1000=doctor web, 1001=doctor flutter, 1002=patient)
+    int?
+        uid, // Optional: specific UID (1000=doctor web, 1001=doctor flutter, 1002=patient)
   }) async {
     try {
       // Determine UID based on role if not explicitly provided
       int assignedUid = uid ?? (role == "doctor" ? 1001 : 1002);
-      
-      final url = Uri.parse("$backendBase/token?channel=$sessionId&uid=$assignedUid");
+
+      final url =
+          Uri.parse("$backendBase/token?channel=$sessionId&uid=$assignedUid");
 
       // Add timeout to prevent hanging forever (e.g. backend offline)
       final res = await http.get(url).timeout(

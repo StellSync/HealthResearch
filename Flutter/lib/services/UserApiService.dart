@@ -30,7 +30,8 @@ class UserApiService {
       } else if (response.statusCode == 401) {
         throw Exception('Invalid email or password');
       } else {
-        throw Exception('Login failed with status code: ${response.statusCode}');
+        throw Exception(
+            'Login failed with status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Login error: $e');

@@ -44,7 +44,8 @@ class RegisterApiService {
       } else if (response.statusCode == 409) {
         throw Exception('Email already registered');
       } else {
-        throw Exception('Registration failed with status code: ${response.statusCode}');
+        throw Exception(
+            'Registration failed with status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Registration error: $e');
