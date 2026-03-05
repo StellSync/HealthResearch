@@ -1,9 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class PrerequisiteCheckService {
   /// Base URL for prerequisites API (different from main API)
-  static const String prerequisiteBaseUrl = 'http://10.160.151.43:8002';
+  static const String prerequisiteBaseUrl = ApiConfig.baseUrl1;
 
   /// Check all prerequisites before allowing access to questionnaire
   /// Returns a map with 'success' and 'message' keys

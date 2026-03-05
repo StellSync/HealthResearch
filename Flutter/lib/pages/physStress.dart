@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
+import 'package:health_research/config/api_config.dart';
 
 class PhysStress extends StatefulWidget {
   const PhysStress({super.key});
@@ -279,7 +280,7 @@ class _PhysStressState extends State<PhysStress> {
   /// Fetch user details from API
   Future<Map<String, dynamic>?> _fetchUserDetails(String patientId) async {
     try {
-      final url = Uri.parse('http://10.160.151.43:8000/api/patients/$patientId');
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/patients/$patientId');
       final response = await http.get(url).timeout(
         const Duration(seconds: 30),
         onTimeout: () => throw Exception('Request timeout'),
@@ -353,7 +354,7 @@ class _PhysStressState extends State<PhysStress> {
   /// Submit prediction data to API
   Future<bool> _submitPredictionData(Map<String, dynamic> data) async {
     try {
-      final url = Uri.parse('http://10.160.151.43:8001/predict/burnout');
+      final url = Uri.parse('${ApiConfig.baseUrl2}/predict/burnout');
 
       final response = await http
           .post(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/usage_stats_service.dart';
+import 'package:health_research/config/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UsageStatsScreen extends StatefulWidget {
   const UsageStatsScreen({Key? key}) : super(key: key);
@@ -19,6 +21,12 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   int _sleepHours = 0;
   int _screenTime = 0;
   bool _isLoadingHealthMetrics = false;
+  String patientId = "";
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    patientId = prefs.getString('patientId') ?? '';
+  }
 
   // Controllers for input (only for Heart Rate and Sleep Hours)
   late TextEditingController _heartRateController;
@@ -30,6 +38,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
     _sleepHoursController = TextEditingController();
     _checkPermissionAndLoadData();
     _fetchHealthMetrics();
+    _loadUserData();
   }
 
   @override
@@ -41,8 +50,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   /// Fetch health metrics from API
   Future<void> _fetchHealthMetrics() async {
     try {
-      const String userId = 'user301'; // Replace with actual user ID from session
-      final url = Uri.parse('http://10.160.151.43:8002/user_features/$userId');
+      final url = Uri.parse('${ApiConfig.baseUrl1}/user_features/$patientId');
 
       final response = await http.get(url).timeout(
         const Duration(seconds: 30),
@@ -68,8 +76,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   /// Save health metrics to API
   Future<void> _saveHealthMetrics() async {
     try {
-      const String userId = 'user301'; // Replace with actual user ID from session
-      final url = Uri.parse('http://10.160.151.43:8002/user_features/save');
+      final url = Uri.parse('${ApiConfig.baseUrl1}/user_features/save');
 
       final heartRate = int.tryParse(_heartRateController.text) ?? 0;
       final sleepHours = int.tryParse(_sleepHoursController.text) ?? 0;
@@ -87,7 +94,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'user_id': userId,
+          'user_id': patientId,
           'features': {
             'Heart_Rate': heartRate,
             'Sleep_Hours': sleepHours,

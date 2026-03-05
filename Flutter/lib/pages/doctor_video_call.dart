@@ -6,9 +6,9 @@ import 'package:health_research/pages/baseUi.dart';
 import 'package:health_research/pages/dashboard.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:health_research/config/api_config.dart';
 
 const String appId = "f84298e9180448cfb3d26e3ec61e49db";
-const String tokenServer = "http://10.55.234.43:8000/token";
 
 /// Doctor Video Call Screen
 /// This is used by the doctor/clinician on web/desktop
@@ -48,8 +48,8 @@ class _DoctorVideoCallState extends State<DoctorVideoCall> {
   Future<String> _fetchToken(String channel) async {
     try {
       // Doctor on Flutter uses UID 1001 for consistency with web (1000)
-      final url =
-          Uri.parse("$tokenServer?channel=$channel&uid=${widget.doctorUid}");
+      final url = Uri.parse(
+          "${ApiConfig.agoraTokenServerUrl}/token?channel=$channel&uid=${widget.doctorUid}");
       debugPrint("📡 [DOCTOR] Requesting token from: $url");
 
       final res = await http.get(url).timeout(

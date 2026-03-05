@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health_research/pages/stressQuestionnaireScreen.dart';
 import 'package:health_research/services/PrerequisiteCheckService.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AcademicHome extends StatefulWidget {
   const AcademicHome({super.key});
@@ -12,11 +13,20 @@ class AcademicHome extends StatefulWidget {
 class _AcademicHomeState extends State<AcademicHome> {
   bool _isCheckingPrerequisites = false;
 
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  String patientId = "";
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    patientId = prefs.getString('patientId') ?? '';
+  }
+
   /// Check all prerequisites before navigating to questionnaire
   Future<void> _checkAndNavigate() async {
-    // Get user ID (you may need to get this from shared preferences or auth service)
-    // For now, using a placeholder - replace with actual user ID retrieval
-    const String userId = '300'; // Replace with actual user ID
 
     setState(() {
       _isCheckingPrerequisites = true;
@@ -27,7 +37,7 @@ class _AcademicHomeState extends State<AcademicHome> {
       _showLoadingDialog();
 
       // Check all prerequisites
-      final result = await PrerequisiteCheckService.checkAllPrerequisites(userId);
+      final result = await PrerequisiteCheckService.checkAllPrerequisites(patientId);
 
       // Close loading dialog
       if (mounted) {
