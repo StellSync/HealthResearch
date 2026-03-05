@@ -5,12 +5,16 @@
 /// between development, staging, and production servers.
 
 class ApiConfig {
-  /// Main API Base URL - Change this to switch servers
+  /// Main API Base URL (Port 8000) - For authentication, dashboard, sessions
   ///
   /// Development: http://10.33.135.43:8000
-  /// Staging: http://staging-api.example.com:8000
-  /// Production: https://api.example.com
+  /// Current: http://10.55.234.43:8000
   static const String baseUrl = 'http://10.55.234.43:8000';
+
+  /// Secondary API Base URL (Port 8002) - For OnDeviceSummarization, stress results
+  ///
+  /// OnDeviceSummarization: http://10.55.234.43:8002
+  static const String baseUrl1 = 'http://10.55.234.43:8002';
 
   /// API Version (optional, for future use)
   static const String apiVersion = '/api';
@@ -32,10 +36,12 @@ class ApiConfig {
   static const String sessionsEndpoint = '$apiVersion/sessions';
   static String get sessionsUrl => '$baseUrl$sessionsEndpoint';
 
-  static const String doctorsAvailableEndpoint = '$apiVersion/sessions/doctors/available';
+  static const String doctorsAvailableEndpoint =
+      '$apiVersion/sessions/doctors/available';
   static String get doctorsAvailableUrl => '$baseUrl$doctorsAvailableEndpoint';
 
-  static const String sessionCreateEndpoint = '$apiVersion/sessions/SessionCreate';
+  static const String sessionCreateEndpoint =
+      '$apiVersion/sessions/SessionCreate';
   static String get sessionCreateUrl => '$baseUrl$sessionCreateEndpoint';
 
   // ──────────────────────────────────────────────────────────────
@@ -67,7 +73,9 @@ class ApiConfig {
 
   /// Get current environment
   static String getEnvironment() {
-    if (baseUrl.contains('localhost') || baseUrl.contains('127.0.0.1') || baseUrl.contains('10.33')) {
+    if (baseUrl.contains('localhost') ||
+        baseUrl.contains('127.0.0.1') ||
+        baseUrl.contains('10.33')) {
       return 'Development';
     } else if (baseUrl.contains('staging')) {
       return 'Staging';
