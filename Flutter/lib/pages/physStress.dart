@@ -428,11 +428,11 @@ class _PhysStressState extends State<PhysStress> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.blue[300]!),
+                  borderSide: BorderSide(color: Colors.black),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                  borderSide: const BorderSide(color: Colors.black, width: 2.5),
                 ),
               ),
               inputFormatters: [
@@ -480,11 +480,11 @@ class _PhysStressState extends State<PhysStress> {
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue[300]!),
+                borderSide: BorderSide(color: Colors.black),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                borderSide: const BorderSide(color: Colors.black, width: 2.5),
               ),
             ),
             inputFormatters: [

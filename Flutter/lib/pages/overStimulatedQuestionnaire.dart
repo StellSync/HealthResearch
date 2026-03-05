@@ -356,11 +356,15 @@ class _OverStimulatedQuestionnaireState extends State<OverStimulatedQuestionnair
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(opt),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Colors.blue[700] : Colors.grey[200],
-                  foregroundColor: selected ? Colors.white : Colors.black,
+                  backgroundColor: selected ? const Color(0xa3bdbaba) : Colors.grey[100],
+                  foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: selected ? Colors.black : Colors.grey.shade300,
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 child: Text(opt, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
@@ -390,10 +394,10 @@ class _OverStimulatedQuestionnaireState extends State<OverStimulatedQuestionnair
             onTap: () => _onChoiceSelected(option),
             child: Container(
               decoration: BoxDecoration(
-                color: selected ? Colors.blue[100] : Colors.grey[100],
+                color: selected ? const Color(0xA3BDBABA) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? Colors.blue[700]! : Colors.grey[300]!,
+                  color: selected ? Colors.black : Colors.grey[300]!,
                   width: selected ? 2 : 1,
                 ),
               ),
@@ -430,13 +434,13 @@ class _OverStimulatedQuestionnaireState extends State<OverStimulatedQuestionnair
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(option),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Colors.blue[100] : Colors.grey[100],
+                  backgroundColor: selected ? const Color(0xa3bdbaba) : Colors.grey[100],
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: selected ? Colors.blue[700]! : Colors.grey.shade300,
+                      color: selected ? Colors.black : Colors.grey.shade300,
                       width: 2,
                     ),
                   ),
@@ -484,11 +488,11 @@ class _OverStimulatedQuestionnaireState extends State<OverStimulatedQuestionnair
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue[300]!),
+                borderSide: BorderSide(color: Colors.black),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                borderSide: const BorderSide(color: Colors.black, width: 2.5),
               ),
             ),
             inputFormatters: [

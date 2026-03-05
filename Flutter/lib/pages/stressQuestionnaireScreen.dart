@@ -445,7 +445,7 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(opt),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Colors.blue[700] : Colors.grey[200],
+                  backgroundColor: selected ? const Color(0xa3bdbaba) : Colors.grey[100],
                   foregroundColor: selected ? Colors.white : Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -478,10 +478,10 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
             onTap: () => _onChoiceSelected(opt),
             child: Container(
               decoration: BoxDecoration(
-                color: selected ? Colors.blue[100] : Colors.grey[100],
+                color: selected ? Colors.black : Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? Colors.blue[700]! : Colors.grey[300]!,
+                  color: selected ? Colors.black! : Colors.grey[300]!,
                   width: selected ? 2 : 1,
                 ),
               ),
@@ -514,13 +514,13 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(opt),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Colors.blue[100] : Colors.grey[100],
+                  backgroundColor: selected ? Colors.black : Colors.grey[100],
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: selected ? Colors.blue[700]! : Colors.grey.shade300,
+                      color: selected ? Colors.black : Colors.grey.shade300,
                       width: 2,
                     ),
                   ),
@@ -588,7 +588,7 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
             min: min,
             max: max,
             divisions: ((max - min) ~/ 5).toInt(),
-            activeColor: Colors.blue[700],
+            activeColor: Colors.black,
             inactiveColor: Colors.grey[300],
             onChanged: (v) => setState(() => _answers[_currentIndex] = v.toInt()),
           ),
@@ -617,11 +617,11 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.blue[300]!),
+                  borderSide: BorderSide(color: Colors.black),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                  borderSide: const BorderSide(color: Colors.black, width: 2.5),
                 ),
               ),
               inputFormatters: [
@@ -660,7 +660,7 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.blue, width: 2),
+                borderSide: const BorderSide(color: Colors.black, width: 2),
               ),
             ),
             maxLines: 3,
@@ -693,7 +693,7 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                  borderSide: const BorderSide(color: Colors.black, width: 2.5),
                 ),
               ),
               inputFormatters: [
@@ -762,11 +762,11 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue[300]!),
+                borderSide: BorderSide(color: Colors.black),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                borderSide: const BorderSide(color: Colors.black, width: 2.5),
               ),
             ),
             inputFormatters: [

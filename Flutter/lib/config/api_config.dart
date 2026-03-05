@@ -10,7 +10,7 @@ class ApiConfig {
   /// Development: http://10.33.135.43:8000
   /// Staging: http://staging-api.example.com:8000
   /// Production: https://api.example.com
-  static const String baseUrl = 'http://10.55.234.43:8000';
+  static const String baseUrl = 'http://10.160.151.43:8000';
 
   /// API Version (optional, for future use)
   static const String apiVersion = '/api';
