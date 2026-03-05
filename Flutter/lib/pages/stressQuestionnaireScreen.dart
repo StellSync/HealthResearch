@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:health_research/services/StressApiService.dart';
 
 class StressQuestionnaireScreen extends StatefulWidget {
-  const StressQuestionnaireScreen({super.key});
+  final String? userId; // Optional userId parameter
+  const StressQuestionnaireScreen({super.key, this.userId});
 
   @override
-  State<StressQuestionnaireScreen> createState() => _StressQuestionnaireScreenState();
+  State<StressQuestionnaireScreen> createState() =>
+      _StressQuestionnaireScreenState();
 }
 
 class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
   int _currentIndex = 0;
   final Map<int, dynamic> _answers = {};
+  bool _isSubmitting = false;
+  final StressApiService _apiService = StressApiService();
 
   bool get _isNextEnabled {
     final answer = _answers[_currentIndex];
@@ -104,7 +109,14 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
 
     // For Headache_Frequency (6 options -> 0-5)
     if (maxValue == 6) {
-      const options = ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often', 'Always'];
+      const options = [
+        'Never',
+        'Rarely',
+        'Sometimes',
+        'Often',
+        'Very Often',
+        'Always'
+      ];
       final index = options.indexOf(answer.toString());
       return index >= 0 ? index : null;
     }
@@ -206,7 +218,14 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       'title': 'How frequently do you experience headaches (0-6 scale)?',
       'image': 'assets/images/question_health.png',
       'type': 'choice',
-      'options': ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often', 'Always'],
+      'options': [
+        'Never',
+        'Rarely',
+        'Sometimes',
+        'Often',
+        'Very Often',
+        'Always'
+      ],
       'key': 'Headache_Frequency',
       'range': '0-6',
     },
@@ -214,12 +233,20 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       'title': 'How would you rate your sleep quality over the past week?',
       'image': 'assets/images/question_sleep.jpg',
       'type': 'choice',
-      'options': ['Very Poor', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+      'options': [
+        'Very Poor',
+        'Poor',
+        'Fair',
+        'Good',
+        'Very Good',
+        'Excellent'
+      ],
       'key': 'Sleep_Quality',
       'range': '0-6',
     },
     {
-      'title': 'On a typical day, how many total hours do you spend using technology (excluding academic classes)?',
+      'title':
+          'On a typical day, how many total hours do you spend using technology (excluding academic classes)?',
       'image': 'assets/images/question_tech.jpg',
       'type': 'number_hours_day',
       'key': 'Tech_Usage_Hours',
@@ -289,7 +316,9 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       return;
     }
 
-    if (type == 'number_1_10' || type == 'number_hours' || type == 'number_hours_day') {
+    if (type == 'number_1_10' ||
+        type == 'number_hours' ||
+        type == 'number_hours_day') {
       final n = int.tryParse(value);
       if (n != null) {
         if ((type == 'number_1_10' && n >= 1 && n <= 10) ||
@@ -312,7 +341,56 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
     if (_currentIndex < _questions.length - 1) {
       setState(() => _currentIndex++);
     } else {
-      // Questionnaire completed - show all answers
+      // Questionnaire completed - show submission dialog
+      _showSubmitDialog();
+    }
+  }
+
+  /// Show a dialog with Submit and Review options
+  void _showSubmitDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Questionnaire Completed'),
+          content: const Text(
+              'Would you like to submit your responses to the system?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Go back
+              },
+              child: const Text('Review Later'),
+            ),
+            ElevatedButton(
+              onPressed: _isSubmitting ? null : _submitQuestionnaire,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[700],
+              ),
+              child: _isSubmitting
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Submit', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Submit questionnaire data to the API
+  Future<void> _submitQuestionnaire() async {
+    setState(() => _isSubmitting = true);
+
+    try {
       final allAnswers = _answersData;
 
       print('=== QUESTIONNAIRE COMPLETED ===');
@@ -322,14 +400,56 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       });
       print('==============================');
 
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Questionnaire completed! 🎉'),
-          backgroundColor: Colors.green[700],
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // Get userId - use provided one or try to get from storage
+      String userId = widget.userId ?? 'unknown_user';
+
+      // Call the API to submit stress prediction
+      final response = await _apiService.predictStress(userId, allAnswers);
+
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+
+        // Close the dialog
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context); // Close dialog
+        }
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ Questionnaire submitted successfully!'),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Close the questionnaire screen
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
+
+        print('=== API RESPONSE ===');
+        print(response);
+        print('====================');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: ${e.toString()}'),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        print('=== ERROR SUBMITTING QUESTIONNAIRE ===');
+        print('Error: $e');
+        print('=====================================');
+      }
     }
   }
 
@@ -378,7 +498,8 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -389,12 +510,18 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                           q['image'],
                           height: 180,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100, color: Colors.grey),
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.broken_image,
+                              size: 100,
+                              color: Colors.grey),
                         ),
                       ),
                     Text(
                       q['title'],
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.3),
+                      style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 40),
@@ -409,16 +536,34 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isNextEnabled ? _next : null,
+                  onPressed: (_isNextEnabled && !_isSubmitting) ? _next : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isNextEnabled ? Color(0xff000000) : Colors.grey[400],
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: _isNextEnabled ? 3 : 0,
+                    backgroundColor: (_isNextEnabled && !_isSubmitting)
+                        ? Color(0xff000000)
+                        : Colors.grey[400],
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: (_isNextEnabled && !_isSubmitting) ? 3 : 0,
                   ),
-                  child: Text(
-                    _currentIndex < _questions.length - 1 ? 'Next' : 'Finish',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
-                  ),
+                  child: _isSubmitting
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          _currentIndex < _questions.length - 1
+                              ? 'Next'
+                              : 'Submit',
+                          style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white),
+                        ),
                 ),
               ),
             ),
@@ -445,14 +590,17 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(opt),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Colors.blue[700] : Colors.grey[200],
+                  backgroundColor:
+                      selected ? Colors.blue[700] : Colors.grey[200],
                   foregroundColor: selected ? Colors.white : Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(opt, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                child: Text(opt,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
           );
@@ -514,18 +662,22 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               child: ElevatedButton(
                 onPressed: () => _onChoiceSelected(opt),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: selected ? Colors.blue[100] : Colors.grey[100],
+                  backgroundColor:
+                      selected ? Colors.blue[100] : Colors.grey[100],
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: selected ? Colors.blue[700]! : Colors.grey.shade300,
+                      color:
+                          selected ? Colors.blue[700]! : Colors.grey.shade300,
                       width: 2,
                     ),
                   ),
                 ),
-                child: Text(opt, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                child: Text(opt,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
           );
@@ -552,7 +704,8 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                       color: isSelected ? Colors.amber[400] : Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? Colors.amber[700]! : Colors.grey[300]!,
+                        color:
+                            isSelected ? Colors.amber[700]! : Colors.grey[300]!,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -590,7 +743,8 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
             divisions: ((max - min) ~/ 5).toInt(),
             activeColor: Colors.blue[700],
             inactiveColor: Colors.grey[300],
-            onChanged: (v) => setState(() => _answers[_currentIndex] = v.toInt()),
+            onChanged: (v) =>
+                setState(() => _answers[_currentIndex] = v.toInt()),
           ),
           const SizedBox(height: 12),
           Text(
@@ -608,7 +762,8 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
           SizedBox(
             width: 200,
             child: TextField(
-              keyboardType: const TextInputType.numberWithOptions(decimal: false),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: false),
               key: ValueKey('percentage_input_$_currentIndex'),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -704,9 +859,15 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                 if (v.length == 4) {
                   final hour = int.tryParse(v.substring(0, 2));
                   final min = int.tryParse(v.substring(2, 4));
-                  if (hour != null && min != null && hour >= 0 && hour < 24 && min >= 0 && min < 60) {
+                  if (hour != null &&
+                      min != null &&
+                      hour >= 0 &&
+                      hour < 24 &&
+                      min >= 0 &&
+                      min < 60) {
                     setState(() {
-                      _answers[_currentIndex] = '$hour:${min.toString().padLeft(2, '0')}';
+                      _answers[_currentIndex] =
+                          '$hour:${min.toString().padLeft(2, '0')}';
                     });
                   }
                 }

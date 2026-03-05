@@ -30,4 +30,30 @@ class AnxietyApiService {
       throw Exception('Error fetching anxiety results: $e');
     }
   }
+
+  /// Submit anxiety prediction with questionnaire data
+  Future<Map<String, dynamic>> predictAnxiety(
+    String userId,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/predict/anxiety'),
+        headers: ApiConfig.defaultHeaders,
+        body: jsonEncode({
+          'user_id': userId,
+          ...payload,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        return jsonResponse as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to predict anxiety: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error predicting anxiety: $e');
+    }
+  }
 }

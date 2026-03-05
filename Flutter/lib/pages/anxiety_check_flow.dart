@@ -62,6 +62,21 @@ class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
 
   Future<void> _onAnxietyQuestionnaireCompleted(
       Map<String, dynamic> answersData) async {
+    // Move to submit screen (show summary with submit button)
+    setState(() {
+      _currentStep = 2; // Show result screen with submit option
+    });
+
+    // Store answers for submission
+    _anxietyAnswersData = answersData;
+  }
+
+  // Store anxiety answers for later submission
+  Map<String, dynamic>? _anxietyAnswersData;
+
+  Future<void> _submitAnxietyAssessment() async {
+    if (_anxietyAnswersData == null) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -69,30 +84,35 @@ class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
     try {
       // Extract answer values
       final techUsageHours =
-          (answersData['Tech_Usage_Hours'] as num?)?.toDouble() ?? 0.0;
-      final workHours = (answersData['Work_Hours'] as num?)?.toDouble() ?? 0.0;
+          (_anxietyAnswersData!['Tech_Usage_Hours'] as num?)?.toDouble() ?? 0.0;
+      final workHours =
+          (_anxietyAnswersData!['Work_Hours'] as num?)?.toDouble() ?? 0.0;
       final exerciseHours =
-          (answersData['Exercise_Hours'] as num?)?.toDouble() ?? 0.0;
+          (_anxietyAnswersData!['Exercise_Hours'] as num?)?.toDouble() ?? 0.0;
       final socialInteraction =
-          (answersData['Social_Interaction'] as num?)?.toDouble() ?? 0.0;
+          (_anxietyAnswersData!['Social_Interaction'] as num?)?.toDouble() ??
+              0.0;
       final noiseExposure =
-          (answersData['Noise_Exposure'] as num?)?.toDouble() ?? 0.0;
+          (_anxietyAnswersData!['Noise_Exposure'] as num?)?.toDouble() ?? 0.0;
 
       // Build payload for anxiety prediction according to API specification
       final payload = {
         'Tech_Usage_Hours': techUsageHours,
         'Sensory_Sensitivity':
-            (answersData['Sensory_Sensitivity'] as num?)?.toDouble() ?? 0.0,
+            (_anxietyAnswersData!['Sensory_Sensitivity'] as num?)?.toDouble() ??
+                0.0,
         'num_missing': 0.0,
         'Multitasking_Habit':
-            (answersData['Multitasking_Habit'] as num?)?.toDouble() ?? 0.0,
+            (_anxietyAnswersData!['Multitasking_Habit'] as num?)?.toDouble() ??
+                0.0,
         'Sleep_Hours_div_Screen_Time':
             _sleepHours != null && _screenTime != null
                 ? _sleepHours! / (_screenTime! + 0.001)
                 : 0.0,
         'Social_Interaction': socialInteraction,
         'Irritability_Score':
-            (answersData['Irritability_Score'] as num?)?.toDouble() ?? 0.0,
+            (_anxietyAnswersData!['Irritability_Score'] as num?)?.toDouble() ??
+                0.0,
         'Noise_Exposure_div_Exercise_Hours':
             noiseExposure / (exerciseHours + 0.001),
         'Social_Interaction_div_Work_Hours':
@@ -106,9 +126,17 @@ class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
 
       setState(() {
         _predictionResult = result;
-        _currentStep = 2; // Move to result screen
         _isLoading = false;
       });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('✅ Anxiety assessment submitted successfully!'),
+          backgroundColor: Colors.green[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       setState(() {
         _errorMessage = 'Error submitting questionnaire: $e';
@@ -189,6 +217,7 @@ class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
         result: _predictionResult,
         userFeatures: _userFeatures,
         onClose: () => Navigator.of(context).pop(),
+        onSubmit: _submitAnxietyAssessment,
       );
     }
 
@@ -478,9 +507,7 @@ class _AnxietyQuestionnaireModifiedState
                     elevation: _isNextEnabled ? 3 : 0,
                   ),
                   child: Text(
-                    _currentIndex < _questions.length - 1
-                        ? 'Next'
-                        : 'Get Prediction',
+                    _currentIndex < _questions.length - 1 ? 'Next' : 'Submit',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -628,15 +655,18 @@ class _AnxietyResultScreen extends StatelessWidget {
   final Map<String, dynamic>? result;
   final Map<String, dynamic>? userFeatures;
   final VoidCallback onClose;
+  final VoidCallback onSubmit;
 
   const _AnxietyResultScreen({
     this.result,
     this.userFeatures,
     required this.onClose,
+    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasResult = result != null;
     final prediction = result?['prediction'] as int? ?? 0;
     final probability = result?['probability'] as double? ?? 0.0;
     final hasAnxiety = prediction == 1;
@@ -656,77 +686,85 @@ class _AnxietyResultScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: hasAnxiety ? Colors.purple[100] : Colors.green[100],
+                if (hasResult) ...[
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color:
+                          hasAnxiety ? Colors.purple[100] : Colors.green[100],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        hasAnxiety
+                            ? Icons.sentiment_very_dissatisfied
+                            : Icons.sentiment_satisfied,
+                        size: 60,
+                        color: hasAnxiety ? Colors.purple : Colors.green,
+                      ),
+                    ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      hasAnxiety
-                          ? Icons.sentiment_very_dissatisfied
-                          : Icons.sentiment_satisfied,
-                      size: 60,
+                  const SizedBox(height: 24),
+                  Text(
+                    hasAnxiety
+                        ? 'Anxiety Symptoms Detected'
+                        : 'No Anxiety Detected',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
                       color: hasAnxiety ? Colors.purple : Colors.green,
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  hasAnxiety
-                      ? 'Anxiety Symptoms Detected'
-                      : 'No Anxiety Detected',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: hasAnxiety ? Colors.purple : Colors.green,
+                  const SizedBox(height: 12),
+                  Text(
+                    'Confidence: ${(probability * 100).toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Confidence: ${(probability * 100).toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Assessment Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 40),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDetailRow(
-                        'Status',
-                        hasAnxiety ? 'Anxiety Detected' : 'No Anxiety',
-                        hasAnxiety ? Colors.purple : Colors.green,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailRow('Confidence',
-                          '${(probability * 100).toStringAsFixed(1)}%'),
-                    ],
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Assessment Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDetailRow(
+                          'Status',
+                          hasAnxiety ? 'Anxiety Detected' : 'No Anxiety',
+                          hasAnxiety ? Colors.purple : Colors.green,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Confidence',
+                            '${(probability * 100).toStringAsFixed(1)}%'),
+                      ],
+                    ),
                   ),
-                ),
+                ] else ...[
+                  const Text(
+                    'Processing Assessment...',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
                 const SizedBox(height: 40),
                 SizedBox(
                   width: double.infinity,
