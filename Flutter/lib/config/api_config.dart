@@ -9,12 +9,14 @@ class ApiConfig {
   ///
   /// Development: http://10.33.135.43:8000
   /// Current: http://10.55.234.43:8000
-  static const String baseUrl = 'http://10.55.234.43:8000';
+  static const String baseUrl = 'http://10.160.151.43:8000';
 
   /// Secondary API Base URL (Port 8002) - For OnDeviceSummarization, stress results
   ///
   /// OnDeviceSummarization: http://10.55.234.43:8002
-  static const String baseUrl1 = 'http://10.55.234.43:8002';
+  static const String baseUrl1 = 'http://10.160.151.43:8002';
+
+  static const String baseUrl2 = 'http://10.160.151.43:8003';
 
   /// API Version (optional, for future use)
   static const String apiVersion = '/api';

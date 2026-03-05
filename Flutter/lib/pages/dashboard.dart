@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:health_research/pages/schedule_session.dart';
-import 'package:health_research/pages/therapy_video_call.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health_research/pages/login.dart';
 import 'package:http/http.dart' as http;
+import 'package:health_research/services/ForecastApiService.dart';
+import 'package:health_research/config/api_config.dart';
 import 'dart:convert';
+import 'dart:math';
 
 class Dashboard extends StatefulWidget {
-  const Dashboard({Key? key}) : super(key: key);
+  const Dashboard({super.key});
 
   @override
   State<Dashboard> createState() => _DashboardState();
@@ -20,6 +21,9 @@ class _DashboardState extends State<Dashboard> {
   int pendingSessions = 0;
   String memberSince = "";
   bool isLoading = false;
+  ForecastData? forecastData;
+  List<Prediction> selectedPredictions = [];
+  bool isForecastLoading = false;
 
   @override
   void initState() {
@@ -36,6 +40,7 @@ class _DashboardState extends State<Dashboard> {
 
     if (patientId.isNotEmpty) {
       await _fetchDashboardData();
+      await _fetchForecastData();
     }
   }
 
@@ -43,7 +48,7 @@ class _DashboardState extends State<Dashboard> {
     setState(() => isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('http://10.33.135.43:8000/api/patients/dashboard/$patientId'),
+        Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -58,9 +63,39 @@ class _DashboardState extends State<Dashboard> {
         });
       }
     } catch (e) {
-      print('Error fetching dashboard data: $e');
+      // Error fetching dashboard data
     }
     setState(() => isLoading = false);
+  }
+
+  Future<void> _fetchForecastData() async {
+    if (patientId.isEmpty) return;
+
+    setState(() => isForecastLoading = true);
+    try {
+      final studentId = int.tryParse(patientId) ?? 0;
+      final forecastService = ForecastApiService();
+      final data = await forecastService.fetchForecast(studentId);
+
+      if (data != null && data.predictions.isNotEmpty) {
+        final random = Random();
+        final maxPredictions = min(3, data.predictions.length);
+        final predictions = <Prediction>[];
+
+        // Shuffle and select random predictions
+        final shuffled = List<Prediction>.from(data.predictions)
+          ..shuffle(random);
+        predictions.addAll(shuffled.take(maxPredictions));
+
+        setState(() {
+          forecastData = data;
+          selectedPredictions = predictions;
+        });
+      }
+    } catch (e) {
+      // Error fetching forecast data
+    }
+    setState(() => isForecastLoading = false);
   }
 
   String _getGreeting() {
@@ -141,11 +176,11 @@ class _DashboardState extends State<Dashboard> {
               _statusCards(),
               const SizedBox(height: 20),
               const Text(
-                "Try following activities to lift your mood",
+                "Your Mental Health Insights",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
-              _activitiesSection(),
+              _mentalHealthInsightsSection(),
             ],
           ),
         ),
@@ -259,13 +294,34 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget _activitiesSection() {
+  Widget _mentalHealthInsightsSection() {
+    if (isForecastLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 30),
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    if (selectedPredictions.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 30),
+          child: Text(
+            "No predictions available",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: const [
-            Text("Activities",
+            Text("Insights",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Spacer(),
             Icon(Icons.arrow_forward_ios, size: 16)
@@ -273,43 +329,130 @@ class _DashboardState extends State<Dashboard> {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 240,
+          height: 220,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            children: [
-              _activityCard(
-                  "Read a book", "30 mins - 2 hrs", "assets/images/book.png"),
-              _activityCard(
-                  "Play a game", "1 hr - 2 hrs", "assets/images/game.jpg"),
-              _activityCard(
-                  "Listen music", "30 mins", "assets/images/music.jpg"),
-            ],
+            children: selectedPredictions
+                .map((prediction) => _predictionCard(prediction))
+                .toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _activityCard(String title, String time, String image) {
+  Widget _predictionCard(Prediction prediction) {
+    Color stressColor;
+    Color mentalColor;
+    IconData stressIcon;
+    IconData mentalIcon;
+
+    // Determine stress level colors and icons
+    if (prediction.stressPredLabel == "High") {
+      stressColor = Colors.red;
+      stressIcon = Icons.trending_up;
+    } else if (prediction.stressPredLabel == "Medium") {
+      stressColor = Colors.orange;
+      stressIcon = Icons.trending_flat;
+    } else {
+      stressColor = Colors.green;
+      stressIcon = Icons.trending_down;
+    }
+
+    // Determine mental state colors and icons
+    if (prediction.mentalPredLabel == "Depression") {
+      mentalColor = Colors.purple;
+      mentalIcon = Icons.sentiment_very_dissatisfied;
+    } else if (prediction.mentalPredLabel == "Moderate Stress") {
+      mentalColor = Colors.orange;
+      mentalIcon = Icons.sentiment_dissatisfied;
+    } else {
+      mentalColor = Colors.green;
+      mentalIcon = Icons.sentiment_satisfied;
+    }
+
+    // Parse date
+    DateTime predictionDate;
+    try {
+      predictionDate = DateTime.parse(prediction.date);
+    } catch (e) {
+      predictionDate = DateTime.now();
+    }
+
     return Container(
-      width: 150,
+      width: 160,
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade300),
+        color: Colors.grey.shade50,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Image.asset(image, fit: BoxFit.contain),
+          Text(
+            DateFormat('MMM dd').format(predictionDate),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(stressIcon, color: stressColor, size: 18),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Stress",
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    Text(
+                      prediction.stressPredLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: stressColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(mentalIcon, color: mentalColor, size: 18),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Mental State",
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    Text(
+                      prediction.mentalPredLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: mentalColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
