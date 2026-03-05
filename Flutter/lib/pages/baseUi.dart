@@ -58,11 +58,11 @@ class _HomePageState extends State<BaseUi> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.directions_run),
-            label: 'Behavior',
+            label: 'Quizzes',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
-            label: 'Time Series',
+            label: 'Status',
           ),
         ],
         currentIndex: _selectedIndex,
