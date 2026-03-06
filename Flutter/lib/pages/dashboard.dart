@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health_research/pages/login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -42,8 +43,9 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _fetchDashboardData() async {
     setState(() => isLoading = true);
     try {
+      print("featch data, patientId: $patientId");
       final response = await http.get(
-        Uri.parse('http://10.33.135.43:8000/api/patients/dashboard/$patientId'),
+        Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

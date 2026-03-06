@@ -35,7 +35,7 @@ class StressApiService {
   Future<Map<String, dynamic>> getUserFeatures(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/user_features/$userId'),
+        Uri.parse('${ApiConfig.baseUrl1}/user_features/$userId'),
         headers: ApiConfig.defaultHeaders,
       );
 

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import 'package:health_research/config/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PhysStress extends StatefulWidget {
   const PhysStress({super.key});
@@ -15,6 +16,19 @@ class PhysStress extends StatefulWidget {
 class _PhysStressState extends State<PhysStress> {
   int _currentIndex = 0;
   final Map<int, dynamic> _answers = {};
+
+
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  String patientId = "";
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    patientId = prefs.getString('patientId') ?? '';
+  }
 
   bool get _isNextEnabled {
     final answer = _answers[_currentIndex];
@@ -227,11 +241,6 @@ class _PhysStressState extends State<PhysStress> {
   /// Submit questionnaire answers to prediction API
   Future<void> _submitQuestionnaire() async {
     try {
-      // Get user ID from session/shared preferences
-      // For now using placeholder - replace with actual user ID
-      const String userId = '300';
-      const String patientId = '69a3f4aac7164b048796b4e4';
-
       // Show loading dialog
       _showLoadingDialog('Submitting responses...');
 
@@ -249,7 +258,7 @@ class _PhysStressState extends State<PhysStress> {
       }
 
       // Step 2: Prepare prediction data
-      final predictionData = _preparePredictionData(userDetails, userId);
+      final predictionData = _preparePredictionData(userDetails, patientId);
 
       // Show loading dialog again
       _showLoadingDialog('Analyzing results...');

@@ -23,6 +23,7 @@ class _AcademicHomeState extends State<AcademicHome> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     patientId = prefs.getString('patientId') ?? '';
+
   }
 
   /// Check all prerequisites before navigating to questionnaire
@@ -37,6 +38,7 @@ class _AcademicHomeState extends State<AcademicHome> {
       _showLoadingDialog();
 
       // Check all prerequisites
+      print("featch data, patientId: $patientId");
       final result = await PrerequisiteCheckService.checkAllPrerequisites(patientId);
 
       // Close loading dialog

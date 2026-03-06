@@ -26,6 +26,10 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     patientId = prefs.getString('patientId') ?? '';
+
+if (patientId.isNotEmpty) {
+      await _fetchHealthMetrics();
+    }
   }
 
   // Controllers for input (only for Heart Rate and Sleep Hours)
@@ -37,7 +41,6 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
     _heartRateController = TextEditingController();
     _sleepHoursController = TextEditingController();
     _checkPermissionAndLoadData();
-    _fetchHealthMetrics();
     _loadUserData();
   }
 
@@ -50,6 +53,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   /// Fetch health metrics from API
   Future<void> _fetchHealthMetrics() async {
     try {
+      print("featch data, patientId: $patientId");
       final url = Uri.parse('${ApiConfig.baseUrl1}/user_features/$patientId');
 
       final response = await http.get(url).timeout(
