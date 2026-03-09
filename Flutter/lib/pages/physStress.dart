@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:math';
+import 'package:health_research/config/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PhysStress extends StatefulWidget {
   const PhysStress({super.key});
@@ -11,6 +16,19 @@ class PhysStress extends StatefulWidget {
 class _PhysStressState extends State<PhysStress> {
   int _currentIndex = 0;
   final Map<int, dynamic> _answers = {};
+
+
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  String patientId = "";
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    patientId = prefs.getString('patientId') ?? '';
+  }
 
   bool get _isNextEnabled {
     final answer = _answers[_currentIndex];
@@ -215,11 +233,508 @@ class _PhysStressState extends State<PhysStress> {
     if (_currentIndex < _questions.length - 1) {
       setState(() => _currentIndex++);
     } else {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Questionnaire completed! 🎉')),
-      );
+      // Questionnaire completed - collect answers and call API
+      _submitQuestionnaire();
     }
+  }
+
+  /// Submit questionnaire answers to prediction API
+  Future<void> _submitQuestionnaire() async {
+    try {
+      // Show loading dialog
+      _showLoadingDialog('Submitting responses...');
+
+      // Step 1: Fetch user details
+      final userDetails = await _fetchUserDetails(patientId);
+
+      if (!mounted) return;
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      if (userDetails == null) {
+        _showErrorDialog('Failed to load user details. Please try again.');
+        return;
+      }
+
+      // Step 2: Prepare prediction data
+      final predictionData = _preparePredictionData(userDetails, patientId);
+
+      // Show loading dialog again
+      _showLoadingDialog('Analyzing results...');
+
+      // Step 3: Submit to prediction API
+      // Note: _submitPredictionData will close the loading dialog and show the prediction dialog
+      final success = await _submitPredictionData(predictionData);
+
+      // If prediction failed, close any remaining dialogs and show error
+      if (!success) {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context); // Close loading dialog if still open
+        }
+        if (mounted) {
+          _showErrorDialog('Failed to submit assessment. Please try again.');
+        }
+      }
+    } catch (e) {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      if (mounted) {
+        _showErrorDialog('An error occurred: $e');
+      }
+    }
+  }
+
+  /// Fetch user details from API
+  Future<Map<String, dynamic>?> _fetchUserDetails(String patientId) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/patients/$patientId');
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching user details: $e');
+      return null;
+    }
+  }
+
+  /// Prepare prediction data from answers and user details
+  Map<String, dynamic> _preparePredictionData(
+    Map<String, dynamic> userDetails,
+    String userId,
+  ) {
+    final random = Random();
+
+    // Parse date of birth to calculate age
+    int age = 0;
+    if (userDetails['date_of_birth'] != null) {
+      try {
+        final dob = DateTime.parse(userDetails['date_of_birth']);
+        final today = DateTime.now();
+        age = today.year - dob.year;
+        if (today.month < dob.month ||
+            (today.month == dob.month && today.day < dob.day)) {
+          age--;
+        }
+      } catch (e) {
+        age = 30; // Default age if parsing fails
+      }
+    }
+
+    // Determine gender (1 for Female, 0 for Male)
+    final gender = userDetails['gender']?.toString().toLowerCase() ?? 'male';
+    final isFemale = gender.contains('female') ? 1 : 0;
+
+    return {
+      'user_id': userId,
+      'features': {
+        'nwave': random.nextInt(3) + 1, // 1, 2, or 3
+        'longipart': [1, 2, 3, 12, 123, 23][random.nextInt(6)],
+        'age': age,
+        'sex': gender == 'female' ? 'Female' : 'Male',
+        'year': random.nextInt(11), // 0-10
+        'bmi': _answers[0] ?? 0, // Q1: BMI
+        'physact': _answers[1] ?? 0, // Q2: Physical Activity (minutes)
+        'health': _answers[2] ?? 0, // Q3: Overall Health (0-4)
+        'psyt': _answers[3] ?? 0, // Q4: Emotional Distress (0-4)
+        'cop_e': _answers[4] ?? 0, // Q5: Emotional Coping (0-20)
+        'cop_p': _answers[5] ?? 0, // Q6: Problem-Focused Coping (0-20)
+        'cop_h': _answers[6] ?? 0, // Q7: Healthy Coping (0-20)
+        'fmale': isFemale, // Female (1) or Male (0)
+        'part': _answers[7] ?? 0, // Q8: Part-Time Work (0-1)
+        'socsup': _answers[8] ?? 0, // Q9: Social Support (0-10)
+        'educ_par': _answers[9] ?? 0, // Q10: Parent Education (0-5)
+        'jobhours': _answers[10] ?? 0, // Q11: Job Hours (0-50)
+        'cesd': random.nextInt(51), // 0-50 (random for now)
+        'bdi_su': random.nextInt(4), // 0-3 (random for now)
+        'stai': random.nextInt(101), // 0-100 (random for now)
+        'stress': random.nextInt(11), // 0-10 (random for now)
+      },
+    };
+  }
+
+  /// Submit prediction data to API
+  Future<bool> _submitPredictionData(Map<String, dynamic> data) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl2}/predict/burnout');
+
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(data),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw Exception('Request timeout'),
+          );
+
+      print('Burnout Prediction API Response: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        try {
+          final responseData = jsonDecode(response.body);
+          final prediction = responseData['data']['prediction'];
+          final probability = responseData['data']['probability'];
+
+          // Check if user is stressed (prediction == 1)
+          final isStressed = prediction == 1;
+          print("User is stressed: $isStressed with probability: $probability");
+          final stressMessage = isStressed
+              ? '⚠️ You are stressed'
+              : '✅ You are not stressed';
+
+          if (mounted) {
+            // Close the loading dialog first
+            Navigator.pop(context);
+
+            // Then show the prediction dialog
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                _showPredictionDialog(stressMessage, isStressed, probability);
+              }
+            });
+          }
+
+          return true;
+        } catch (e) {
+          print('Error parsing prediction response: $e');
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          return false;
+        }
+      }
+
+      // Close loading dialog on failure
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      return false;
+    } catch (e) {
+      print('Error submitting prediction data: $e');
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      return false;
+    }
+  }
+
+  /// Show prediction result dialog
+  void _showPredictionDialog(
+    String message,
+    bool isStressed,
+    double probability,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                isStressed ? Icons.warning_amber : Icons.check_circle,
+                color: isStressed ? Colors.orange : Colors.green,
+                size: 32,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const Text(
+                  'Assessment Result',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isStressed ? Colors.orange : Colors.green,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isStressed ? Colors.orange.shade50 : Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isStressed ? Colors.orange.shade200 : Colors.green.shade200,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Confidence Score',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(probability * 100).toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isStressed ? Colors.orange[700] : Colors.green[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: probability,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isStressed ? Colors.orange : Colors.green,
+                      ),
+                      minHeight: 6,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (isStressed)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Recommendations:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• Take regular breaks\n'
+                        '• Practice mindfulness or meditation\n'
+                        '• Maintain a healthy sleep schedule\n'
+                        '• Consider talking to a healthcare provider',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Keep it up! 🎉',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'You\'re managing stress well. Continue with your healthy habits and routines.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show loading dialog
+  void _showLoadingDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 20),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Show error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 28),
+              SizedBox(width: 12),
+              Text(
+                'Error',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+              child: const Text(
+                'OK',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show success dialog
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.green, size: 28),
+              SizedBox(width: 12),
+              Text(
+                'Success',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -428,11 +943,11 @@ class _PhysStressState extends State<PhysStress> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.blue[300]!),
+                  borderSide: BorderSide(color: Colors.black),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                  borderSide: const BorderSide(color: Colors.black, width: 2.5),
                 ),
               ),
               inputFormatters: [
@@ -480,11 +995,11 @@ class _PhysStressState extends State<PhysStress> {
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue[300]!),
+                borderSide: BorderSide(color: Colors.black),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.blue, width: 2.5),
+                borderSide: const BorderSide(color: Colors.black, width: 2.5),
               ),
             ),
             inputFormatters: [

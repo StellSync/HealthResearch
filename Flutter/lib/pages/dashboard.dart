@@ -7,6 +7,7 @@ import 'package:health_research/services/ForecastApiService.dart';
 import 'package:health_research/config/api_config.dart';
 import 'dart:convert';
 import 'dart:math';
+import 'package:health_research/config/api_config.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -47,7 +48,9 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _fetchDashboardData() async {
     setState(() => isLoading = true);
     try {
+      print("featch data, patientId: $patientId");
       final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
         Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../services/usage_stats_service.dart';
+import 'package:health_research/config/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UsageStatsScreen extends StatefulWidget {
   const UsageStatsScreen({Key? key}) : super(key: key);
@@ -12,12 +15,148 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   bool _isLoading = true;
   bool _hasPermission = false;
   String _errorMessage = '';
+
+  // Health metrics
+  int _heartRate = 0;
+  int _sleepHours = 0;
+  int _screenTime = 0;
+  bool _isLoadingHealthMetrics = false;
+  String patientId = "";
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    patientId = prefs.getString('patientId') ?? '';
+
+if (patientId.isNotEmpty) {
+      await _fetchHealthMetrics();
+    }
+  }
+
+  // Controllers for input (only for Heart Rate and Sleep Hours)
+  late TextEditingController _heartRateController;
+  late TextEditingController _sleepHoursController;
   @override
   void initState() {
     super.initState();
+    _heartRateController = TextEditingController();
+    _sleepHoursController = TextEditingController();
     _checkPermissionAndLoadData();
+    _loadUserData();
   }
-  /// Check permission and load usage data
+
+  @override
+  void dispose() {
+    _heartRateController.dispose();
+    _sleepHoursController.dispose();
+    super.dispose();
+  }
+  /// Fetch health metrics from API
+  Future<void> _fetchHealthMetrics() async {
+    try {
+      print("featch data, patientId: $patientId");
+      final url = Uri.parse('${ApiConfig.baseUrl1}/user_features/$patientId');
+
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _heartRate = data['features']['Heart_Rate'] ?? 0;
+          _sleepHours = data['features']['Sleep_Hours'] ?? 0;
+
+          // Update controllers
+          _heartRateController.text = _heartRate.toString();
+          _sleepHoursController.text = _sleepHours.toString();
+        });
+      }
+    } catch (e) {
+      print('Error fetching health metrics: $e');
+    }
+  }
+
+  /// Save health metrics to API
+  Future<void> _saveHealthMetrics() async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl1}/user_features/save');
+
+      final heartRate = int.tryParse(_heartRateController.text) ?? 0;
+      final sleepHours = int.tryParse(_sleepHoursController.text) ?? 0;
+      // Calculate screen time from total usage time (convert milliseconds to hours)
+      final totalUsageTime = _getTotalUsageTime();
+      final screenTimeHours = (totalUsageTime / (1000 * 60 * 60)).toInt();
+
+      setState(() {
+        _isLoadingHealthMetrics = true;
+      });
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': patientId,
+          'features': {
+            'Heart_Rate': heartRate,
+            'Sleep_Hours': sleepHours,
+            'Screen_Time': screenTimeHours,
+          },
+        }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      setState(() {
+        _isLoadingHealthMetrics = false;
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        setState(() {
+          _heartRate = heartRate;
+          _sleepHours = sleepHours;
+          _screenTime = screenTimeHours;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Health metrics saved successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save health metrics'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingHealthMetrics = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
   Future<void> _checkPermissionAndLoadData() async {
     try {
       setState(() {
@@ -240,63 +379,257 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
   Widget _buildUsageStatsList() {
     final totalUsageTime = _getTotalUsageTime();
 
-    return Column(
-      children: [
-        // Summary Card
-        Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.purple.shade300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Summary Card
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepPurple, Colors.purple.shade300],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.deepPurple.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSummaryItem(
+                  'Total Apps',
+                  _usageStats.length.toString(),
+                  Icons.apps,
+                ),
+                _buildSummaryItem(
+                  'Total Time',
+                  _formatTotalTime(totalUsageTime),
+                  Icons.timer,
+                ),
+                _buildSummaryItem(
+                  'Social Media',
+                  _usageStats.where((app) => app.isSocialMediaApp()).length.toString(),
+                  Icons.people,
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildSummaryItem(
-                'Total Apps',
-                _usageStats.length.toString(),
-                Icons.apps,
-              ),
-              _buildSummaryItem(
-                'Total Time',
-                _formatTotalTime(totalUsageTime),
-                Icons.timer,
-              ),
-              _buildSummaryItem(
-                'Social Media',
-                _usageStats.where((app) => app.isSocialMediaApp()).length.toString(),
-                Icons.people,
-              ),
-            ],
-          ),
-        ),
 
-        // Apps List
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _usageStats.length,
-            itemBuilder: (context, index) {
-              final app = _usageStats[index];
-              final percentage = app.getUsagePercentage(totalUsageTime);
+          // Health Metrics Section
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Display current values
+                const Text(
+                  'Current Health Metrics',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-              return _buildUsageCard(app, percentage);
-            },
+                // Heart Rate Display
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.favorite, color: Colors.red.shade700, size: 24),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Heart Rate',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Text(
+                            '$_heartRate BPM',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Sleep Hours Display
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.nights_stay, color: Colors.blue.shade700, size: 24),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Sleep Hours',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Text(
+                            '$_sleepHours hours',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+
+                const SizedBox(height: 24),
+
+                // Input Section
+                const Text(
+                  'Update Health Metrics',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Heart Rate Input
+                TextField(
+                  controller: _heartRateController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Heart Rate (BPM)',
+                    prefixIcon: Icon(Icons.favorite, color: Colors.red.shade700),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.red.shade700, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Sleep Hours Input
+                TextField(
+                  controller: _sleepHoursController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Sleep Hours',
+                    prefixIcon: Icon(Icons.nights_stay, color: Colors.blue.shade700),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Save Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoadingHealthMetrics ? null : _saveHealthMetrics,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      disabledBackgroundColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: _isLoadingHealthMetrics
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'Saving...',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'Save Health Metrics',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
   Widget _buildSummaryItem(String label, String value, IconData icon) {
@@ -322,78 +655,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
       ],
     );
   }
-  Widget _buildUsageCard(AppUsageInfo app, double percentage) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: app.isSocialMediaApp()
-              ? Colors.orange.shade100
-              : Colors.blue.shade100,
-          child: Icon(
-            app.isSocialMediaApp() ? Icons.people : Icons.apps,
-            color: app.isSocialMediaApp()
-                ? Colors.orange.shade700
-                : Colors.blue.shade700,
-          ),
-        ),
-        title: Text(
-          app.appName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Text('Usage time: ${app.formattedTime}'),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: percentage / 100,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                app.isSocialMediaApp()
-                    ? Colors.orange.shade600
-                    : Colors.blue.shade600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${percentage.toStringAsFixed(1)}% of total usage',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-        trailing: Text(
-          app.formattedTime,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: app.isSocialMediaApp()
-                ? Colors.orange.shade700
-                : Colors.blue.shade700,
-          ),
-        ),
-      ),
-    );
-  }
+
   String _formatTotalTime(int totalTimeMs) {
     final hours = totalTimeMs ~/ (1000 * 60 * 60);
     final minutes = (totalTimeMs % (1000 * 60 * 60)) ~/ (1000 * 60);
