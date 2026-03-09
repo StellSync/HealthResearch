@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
 import 'package:health_research/config/api_config.dart';
 
 class Prediction {
@@ -50,8 +51,11 @@ class ForecastData {
 class ForecastApiService {
   Future<ForecastData?> fetchForecast(int studentId) async {
     try {
+      // Generate random student ID between 1-10
+      final randomStudentId = Random().nextInt(10) + 1;
+
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl2}/forecast/$studentId'),
+        Uri.parse('${ApiConfig.baseUrl2}/forecast/$randomStudentId'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

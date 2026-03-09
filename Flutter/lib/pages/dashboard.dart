@@ -296,21 +296,63 @@ class _DashboardState extends State<Dashboard> {
 
   Widget _mentalHealthInsightsSection() {
     if (isForecastLoading) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 30),
-          child: CircularProgressIndicator(strokeWidth: 2),
+          padding: const EdgeInsets.symmetric(vertical: 60),
+          child: Column(
+            children: [
+              const CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Loading your insights...",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (selectedPredictions.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 30),
-          child: Text(
-            "No predictions available",
-            style: TextStyle(color: Colors.grey),
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [Colors.grey.shade50, Colors.grey.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.psychology,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "No predictions available",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Check back soon for mental health insights",
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -320,20 +362,46 @@ class _DashboardState extends State<Dashboard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
-            Text("Insights",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Spacer(),
-            Icon(Icons.arrow_forward_ios, size: 16)
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Insights",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Your mental health overview",
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF6366F1).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: const Icon(
+                Icons.psychology,
+                color: Color(0xFF6366F1),
+                size: 20,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 220,
+          height: 280,
           child: ListView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             children: selectedPredictions
-                .map((prediction) => _predictionCard(prediction))
+                .asMap()
+                .entries
+                .map((entry) => _predictionCard(entry.value, entry.key))
                 .toList(),
           ),
         ),
@@ -341,34 +409,42 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget _predictionCard(Prediction prediction) {
+  Widget _predictionCard(Prediction prediction, int index) {
     Color stressColor;
     Color mentalColor;
     IconData stressIcon;
     IconData mentalIcon;
+    Color cardGradientStart;
+    Color cardGradientEnd;
 
     // Determine stress level colors and icons
     if (prediction.stressPredLabel == "High") {
-      stressColor = Colors.red;
+      stressColor = const Color(0xFFEF4444);
       stressIcon = Icons.trending_up;
     } else if (prediction.stressPredLabel == "Medium") {
-      stressColor = Colors.orange;
+      stressColor = const Color(0xFFF97316);
       stressIcon = Icons.trending_flat;
     } else {
-      stressColor = Colors.green;
+      stressColor = const Color(0xFF22C55E);
       stressIcon = Icons.trending_down;
     }
 
     // Determine mental state colors and icons
     if (prediction.mentalPredLabel == "Depression") {
-      mentalColor = Colors.purple;
+      mentalColor = const Color(0xFFA855F7);
       mentalIcon = Icons.sentiment_very_dissatisfied;
+      cardGradientStart = const Color(0xFFA855F7).withOpacity(0.1);
+      cardGradientEnd = const Color(0xFF6366F1).withOpacity(0.1);
     } else if (prediction.mentalPredLabel == "Moderate Stress") {
-      mentalColor = Colors.orange;
+      mentalColor = const Color(0xFFF97316);
       mentalIcon = Icons.sentiment_dissatisfied;
+      cardGradientStart = const Color(0xFFF97316).withOpacity(0.1);
+      cardGradientEnd = const Color(0xFFEAB308).withOpacity(0.1);
     } else {
-      mentalColor = Colors.green;
+      mentalColor = const Color(0xFF22C55E);
       mentalIcon = Icons.sentiment_satisfied;
+      cardGradientStart = const Color(0xFF22C55E).withOpacity(0.1);
+      cardGradientEnd = const Color(0xFF10B981).withOpacity(0.1);
     }
 
     // Parse date
@@ -380,78 +456,203 @@ class _DashboardState extends State<Dashboard> {
     }
 
     return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
-        color: Colors.grey.shade50,
+      width: 200,
+      margin: EdgeInsets.only(
+        right: 12,
+        top: 4,
+        bottom: 4,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [cardGradientStart, cardGradientEnd],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: mentalColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: mentalColor.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
         children: [
-          Text(
-            DateFormat('MMM dd').format(predictionDate),
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
+          // Background decorative element
+          Positioned(
+            top: -20,
+            right: -20,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: mentalColor.withOpacity(0.05),
+              ),
             ),
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Icon(stressIcon, color: stressColor, size: 18),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Stress",
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+          // Main content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date with badge
+                Container(
+                  decoration: BoxDecoration(
+                    color: mentalColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: Text(
+                    DateFormat('MMM dd, yyyy').format(predictionDate),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: mentalColor,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Text(
-                      prediction.stressPredLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: stressColor,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Stress section with animated indicator
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: stressColor.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: stressColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          stressIcon,
+                          color: stressColor,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Stress Level",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              prediction.stressPredLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: stressColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Mental state section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: mentalColor.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: mentalColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          mentalIcon,
+                          color: mentalColor,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Mental State",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              prediction.mentalPredLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: mentalColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Index indicator at bottom
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(
+                      selectedPredictions.length,
+                      (i) => Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              i == index ? mentalColor : Colors.grey.shade300,
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Icon(mentalIcon, color: mentalColor, size: 18),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Mental State",
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    Text(
-                      prediction.mentalPredLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: mentalColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
