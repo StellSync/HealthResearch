@@ -9,7 +9,7 @@ class SessionApiService {
     String? doctorId,
     String? status,
     int skip = 0,
-    int limit = 10,
+    int limit = 100,
     bool activeOnly = true,
   }) async {
     try {
@@ -18,6 +18,8 @@ class SessionApiService {
       if (patientId != null && patientId.isNotEmpty) {
         queryParams['patient_id'] = patientId;
       }
+      print('Patient ID: $patientId');
+
       if (doctorId != null && doctorId.isNotEmpty) {
         queryParams['doctor_id'] = doctorId;
       }
