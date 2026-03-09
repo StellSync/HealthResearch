@@ -7,7 +7,7 @@ class DepressionApiService {
   Future<DepressionResult?> getDepressionResults(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl1}/api/results/depression-quiz/$userId'),
+        Uri.parse('${ApiConfig.baseUrl1}/api/results/depression/$userId'),
         headers: ApiConfig.defaultHeaders,
       );
 

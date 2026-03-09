@@ -139,7 +139,7 @@ class _AnxietyQuizState extends State<AnxietyQuiz> {
                         child: const CircleAvatar(
                           radius: 60,
                           backgroundImage:
-                              AssetImage("assets/images/anxiety.png"),
+                              AssetImage("assets/images/anxiety_quiz.png"),
                         ),
                       ),
                       const SizedBox(height: 20),
