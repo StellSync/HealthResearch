@@ -449,7 +449,7 @@ class _OverStimulatedQuestionnaireState extends State<OverStimulatedQuestionnair
 
     return {
       'user_id': userId,
-      'features': {
+      'data': {
         'Age': age,
         'Sleep_Hours': sleepHours,
         'Screen_Time': screenTime,
@@ -504,8 +504,8 @@ class _OverStimulatedQuestionnaireState extends State<OverStimulatedQuestionnair
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           final responseData = jsonDecode(response.body);
-          final prediction = responseData['data']['prediction'];
-          final probability = responseData['data']['probability_high_burnout'];
+          final prediction = responseData['data']['predicted'];
+          final probability = responseData['data']['probability'];
 
           // Check if user is stressed (prediction == 1)
           final isStressed = prediction == 1;

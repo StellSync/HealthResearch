@@ -7,15 +7,18 @@ class DepressionApiService {
   Future<DepressionResult?> getDepressionResults(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl1}/api/results/depression/$userId'),
+        Uri.parse('${ApiConfig.baseUrl1}/api/results/depression-quiz/$userId'),
         headers: ApiConfig.defaultHeaders,
       );
 
+      print("Response status: ${response.statusCode}");
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
+        print("data, $jsonResponse");
         return DepressionResult.fromJson(jsonResponse);
       } else if (response.statusCode == 404) {
         // No depression results found, return empty result
+        print("data, $response.body");
         return DepressionResult(
           userId: userId,
           type: 'Depression',

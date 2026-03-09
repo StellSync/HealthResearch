@@ -48,10 +48,9 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _fetchDashboardData() async {
     setState(() => isLoading = true);
     try {
-      print("featch data, patientId: $patientId");
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
-        Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
+        // Uri.parse('${ApiConfig.baseUrl}/api/patients/dashboard/$patientId'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
