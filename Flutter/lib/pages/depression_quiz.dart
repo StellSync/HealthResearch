@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health_research/services/DepressionApiService.dart';
 import 'package:health_research/models/DepressionResult.dart';
 
+import 'depression_check_flow.dart';
+
 class DepressionQuiz extends StatefulWidget {
   const DepressionQuiz({super.key});
 
@@ -143,7 +145,18 @@ class _DepressionQuizState extends State<DepressionQuiz> {
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: isLoadingDepression ? null : checkDepression,
+                        onPressed: isLoadingDepression
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DepressionCheckFlow(
+                                      userId: patientId,
+                                    ),
+                                  ),
+                                );
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(

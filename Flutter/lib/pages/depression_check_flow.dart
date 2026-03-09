@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:health_research/services/StressApiService.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class DepressionCheckFlow extends StatefulWidget {
   final String userId;
@@ -32,7 +35,28 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
   @override
   void initState() {
     super.initState();
-    _fetchUserFeatures();
+    _fetchUserDetails(widget.userId);
+  }
+
+  Future<void> _fetchUserDetails(String patientId) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/patients/$patientId');
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _age = (data['age'] as num?)?.toDouble() ?? 0.0;
+        });
+        _fetchUserFeatures();
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+      _fetchUserFeatures();
+    }
   }
 
   Future<void> _fetchUserFeatures() async {
@@ -46,9 +70,12 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
 
       setState(() {
         _userFeatures = features;
-        _sleepHours = (features['Sleep_Hours'] as num?)?.toDouble() ?? 0.0;
+        _sleepHours = (features['Sleep_Hours'] as num?)?.toDouble() ?? 5.0;
         _screenTime = (features['Screen_Time'] as num?)?.toDouble() ?? 0.0;
-        _age = (features['Age'] as num?)?.toDouble() ?? 0.0;
+        // Only set age if not already fetched from user details
+        if (_age == 0.0) {
+          _age = (features['Age'] as num?)?.toDouble() ?? 0.0;
+        }
         _currentStep = 1; // Move to depression questionnaire
         _isLoading = false;
       });
@@ -62,6 +89,8 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
 
   Future<void> _onDepressionQuestionnaireCompleted(
       Map<String, dynamic> answersData) async {
+    print('Questionnaire completed with answers: $answersData');
+
     // Move to submit screen (show summary with submit button)
     setState(() {
       _currentStep = 2; // Show depression result screen with submit option
@@ -69,6 +98,8 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
 
     // Store answers for submission
     _depressionAnswersData = answersData;
+
+    _submitDepressionAssessment();
   }
 
   // Store depression answers for later submission
@@ -99,13 +130,19 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
             (_depressionAnswersData!['Sensory_Sensitivity'] as num?)
                     ?.toDouble() ??
                 0.0,
-        'Social_Interaction_div_Exercise_Hours': 0.0, // Placeholder
-        'Tech_Usage_Hours': 0.0, // From stored data
-        'num_missing': 0.0,
-        'Overthinking_Score': 0, // From questionnaire if added
+        'Social_Interaction':
+            (_depressionAnswersData!['Social_Interaction'] as num?)
+                    ?.toDouble() ??
+                0.0,
+        'Work_Hours':
+            (_depressionAnswersData!['Work_Hours'] as num?)?.toDouble() ??
+                0.0,
         'Screen_Time': _screenTime ?? 0.0,
-        'Heart_Rate': 78.0, // Default or from sensor
+        'Age': _age ?? 0.0,
       };
+
+      print('Submitting depression assessment with payload: $payload');
+      print('Answers data: $_depressionAnswersData');
 
       // Call the predict depression endpoint
       final result =
@@ -357,23 +394,25 @@ class _DepressionQuestionnaireModifiedState
       final n = int.tryParse(value);
       if (type == 'number_0_10' && n != null && n >= 0 && n <= 10) {
         _answers[_currentIndex] = n;
+        setState(() {});
       } else if (type == 'number_1_10' && n != null && n >= 1 && n <= 10) {
         _answers[_currentIndex] = n;
+        setState(() {});
       }
     } else if (type == 'number_hours_week') {
       final n = int.tryParse(value);
       if (n != null && n >= 0 && n <= 168) {
         _answers[_currentIndex] = n;
+        setState(() {});
       }
     }
-
-    setState(() {});
   }
 
   void _next() {
     if (_currentIndex < _questions.length - 1) {
       setState(() => _currentIndex++);
     } else {
+      print('Depression answers: $_answersData');
       widget.onCompleted(_answersData);
     }
   }
@@ -632,8 +671,9 @@ class _DepressionResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasResult = result != null;
-    final prediction = result?['prediction'] as int? ?? 0;
-    final probability = result?['probability'] as double? ?? 0.0;
+    // Extract from nested data structure
+    final prediction = result?['data']?['prediction'] as int? ?? 0;
+    final probability = result?['data']?['probability'] as double? ?? 0.0;
     final isDepressed = prediction == 1;
 
     return Scaffold(

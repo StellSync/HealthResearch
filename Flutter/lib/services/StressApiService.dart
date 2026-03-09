@@ -7,7 +7,7 @@ class StressApiService {
   Future<StressResult?> getStressResults(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl1}/api/results/stress/$userId'),
+        Uri.parse('${ApiConfig.baseUrl1}/results/stress/$userId'),
         headers: ApiConfig.defaultHeaders,
       );
 
@@ -91,7 +91,10 @@ class StressApiService {
         }),
       );
 
+      print("Predict Depression Response status: ${response.statusCode}");
+
       if (response.statusCode == 200) {
+        print("Predict Depression Response body: ${response.body}");
         final jsonResponse = jsonDecode(response.body);
         return jsonResponse as Map<String, dynamic>;
       } else {

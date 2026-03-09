@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:health_research/services/AnxietyApiService.dart';
 import 'package:health_research/services/StressApiService.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:health_research/config/api_config.dart';
 
 class AnxietyCheckFlow extends StatefulWidget {
   final String userId;
@@ -14,25 +18,44 @@ class AnxietyCheckFlow extends StatefulWidget {
 }
 
 class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
-  final StressApiService _apiService = StressApiService();
+  final AnxietyApiService _apiService = AnxietyApiService();
+  final StressApiService _stressApiService = StressApiService();
 
-  int _currentStep = 0;
+  bool _showingQuestionnaire = false;
   bool _isLoading = false;
+  Map<String, dynamic>? _predictionResult;
   String? _errorMessage;
 
-  // User features from database
-  Map<String, dynamic>? _userFeatures;
-  double? _sleepHours;
-  double? _screenTime;
-  double? _age;
-
-  // Prediction result
-  Map<String, dynamic>? _predictionResult;
+  // User features
+  double _screenTime = 0.0;
+  double _sleepHours = 5.0;
+  double _age = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserFeatures();
+    _fetchUserDetails(widget.userId);
+  }
+
+  Future<void> _fetchUserDetails(String patientId) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/patients/$patientId');
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _age = (data['age'] as num?)?.toDouble() ?? 0.0;
+        });
+        _fetchUserFeatures();
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+      _fetchUserFeatures();
+    }
   }
 
   Future<void> _fetchUserFeatures() async {
@@ -42,14 +65,15 @@ class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
     });
 
     try {
-      final features = await _apiService.getUserFeatures(widget.userId);
+      final features = await _stressApiService.getUserFeatures(widget.userId);
 
       setState(() {
-        _userFeatures = features;
-        _sleepHours = (features['Sleep_Hours'] as num?)?.toDouble() ?? 0.0;
         _screenTime = (features['Screen_Time'] as num?)?.toDouble() ?? 0.0;
-        _age = (features['Age'] as num?)?.toDouble() ?? 0.0;
-        _currentStep = 1; // Move to anxiety questionnaire
+        _sleepHours = (features['Sleep_Hours'] as num?)?.toDouble() ?? 5.0;
+        if (_age == 0.0) {
+          _age = (features['Age'] as num?)?.toDouble() ?? 0.0;
+        }
+        _showingQuestionnaire = true;
         _isLoading = false;
       });
     } catch (e) {
@@ -60,227 +84,133 @@ class _AnxietyCheckFlowState extends State<AnxietyCheckFlow> {
     }
   }
 
-  Future<void> _onAnxietyQuestionnaireCompleted(
+  Future<void> _onQuestionnaireCompleted(
       Map<String, dynamic> answersData) async {
-    // Move to submit screen (show summary with submit button)
-    setState(() {
-      _currentStep = 2; // Show result screen with submit option
-    });
-
-    // Store answers for submission
-    _anxietyAnswersData = answersData;
-  }
-
-  // Store anxiety answers for later submission
-  Map<String, dynamic>? _anxietyAnswersData;
-
-  Future<void> _submitAnxietyAssessment() async {
-    if (_anxietyAnswersData == null) return;
-
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      // Extract answer values
-      final techUsageHours =
-          (_anxietyAnswersData!['Tech_Usage_Hours'] as num?)?.toDouble() ?? 0.0;
-      final workHours =
-          (_anxietyAnswersData!['Work_Hours'] as num?)?.toDouble() ?? 0.0;
-      final exerciseHours =
-          (_anxietyAnswersData!['Exercise_Hours'] as num?)?.toDouble() ?? 0.0;
-      final socialInteraction =
-          (_anxietyAnswersData!['Social_Interaction'] as num?)?.toDouble() ??
-              0.0;
-      final noiseExposure =
-          (_anxietyAnswersData!['Noise_Exposure'] as num?)?.toDouble() ?? 0.0;
-
-      // Build payload for anxiety prediction according to API specification
+      // Build complete payload with user features + questionnaire answers
       final payload = {
-        'Tech_Usage_Hours': techUsageHours,
-        'Sensory_Sensitivity':
-            (_anxietyAnswersData!['Sensory_Sensitivity'] as num?)?.toDouble() ??
-                0.0,
-        'num_missing': 0.0,
-        'Multitasking_Habit':
-            (_anxietyAnswersData!['Multitasking_Habit'] as num?)?.toDouble() ??
-                0.0,
-        'Sleep_Hours_div_Screen_Time':
-            _sleepHours != null && _screenTime != null
-                ? _sleepHours! / (_screenTime! + 0.001)
-                : 0.0,
-        'Social_Interaction': socialInteraction,
-        'Irritability_Score':
-            (_anxietyAnswersData!['Irritability_Score'] as num?)?.toDouble() ??
-                0.0,
-        'Noise_Exposure_div_Exercise_Hours':
-            noiseExposure / (exerciseHours + 0.001),
-        'Social_Interaction_div_Work_Hours':
-            socialInteraction / (workHours + 0.001),
-        'Sleep_Hours': _sleepHours ?? 0.0,
-        'Age': _age ?? 0.0,
+        'Tech_Usage_Hours': answersData['Tech_Usage_Hours'] ?? 0,
+        'Sensory_Sensitivity': answersData['Sensory_Sensitivity'] ?? 0,
+        'Multitasking_Habit': answersData['Multitasking_Habit'] ?? 0,
+        'Sleep_Hours': _sleepHours,
+        'Screen_Time': _screenTime,
+        'Social_Interaction': answersData['Social_Interaction'] ?? 0,
+        'Irritability_Score': answersData['Irritability_Score'] ?? 0,
+        'Noise_Exposure': answersData['Noise_Exposure'] ?? 0,
+        'Exercise_Hours': answersData['Exercise_Hours'] ?? 0,
+        'Work_Hours': answersData['Work_Hours'] ?? 0,
+        'Age': _age,
       };
 
-      // Call the predict anxiety endpoint
+      print('Anxiety Questionnaire answers: $answersData');
+      print('Sending anxiety prediction payload: $payload');
+
       final result = await _apiService.predictAnxiety(widget.userId, payload);
 
-      setState(() {
-        _predictionResult = result;
-        _isLoading = false;
-      });
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('✅ Anxiety assessment submitted successfully!'),
-          backgroundColor: Colors.green[700],
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _predictionResult = result;
+          _showingQuestionnaire = false;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error submitting questionnaire: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _retry() {
     setState(() {
-      _currentStep = 0;
+      _showingQuestionnaire = false;
       _errorMessage = null;
-      _userFeatures = null;
       _predictionResult = null;
     });
-    _fetchUserFeatures();
+    _fetchUserDetails(widget.userId);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Loading state
-    if (_isLoading && _currentStep != 2) {
+    if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.grey.shade100,
-        appBar: AppBar(
-          title: const Text('Anxiety Check'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        appBar: AppBar(title: const Text('Anxiety Check')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Error state
-    if (_errorMessage != null && _currentStep == 0) {
+    if (_errorMessage != null) {
       return Scaffold(
-        backgroundColor: Colors.grey.shade100,
-        appBar: AppBar(
-          title: const Text('Anxiety Check'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-        ),
+        appBar: AppBar(title: const Text('Anxiety Check')),
         body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _retry,
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _retry,
+                child: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    // Step 1: Anxiety Questionnaire
-    if (_currentStep == 1) {
-      return _AnxietyQuestionnaireWrapper(
-        onCompleted: _onAnxietyQuestionnaireCompleted,
+    if (_showingQuestionnaire) {
+      return _AnxietyQuestionnaire(
+        onCompleted: _onQuestionnaireCompleted,
       );
     }
 
-    // Step 2: Result Screen
-    if (_currentStep == 2) {
-      return _AnxietyResultScreen(
-        result: _predictionResult,
-        userFeatures: _userFeatures,
-        onClose: () => Navigator.of(context).pop(),
-        onSubmit: _submitAnxietyAssessment,
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-}
-
-class _AnxietyQuestionnaireWrapper extends StatefulWidget {
-  final Function(Map<String, dynamic>) onCompleted;
-
-  const _AnxietyQuestionnaireWrapper({
-    required this.onCompleted,
-  });
-
-  @override
-  State<_AnxietyQuestionnaireWrapper> createState() =>
-      _AnxietyQuestionnaireWrapperState();
-}
-
-class _AnxietyQuestionnaireWrapperState
-    extends State<_AnxietyQuestionnaireWrapper> {
-  @override
-  Widget build(BuildContext context) {
-    return _AnxietyQuestionnaireModified(
-      onCompleted: widget.onCompleted,
+    return _ResultScreen(
+      result: _predictionResult,
+      onClose: () => Navigator.of(context).pop(),
     );
   }
 }
 
-class _AnxietyQuestionnaireModified extends StatefulWidget {
+// Questionnaire Widget
+class _AnxietyQuestionnaire extends StatefulWidget {
   final Function(Map<String, dynamic>) onCompleted;
 
-  const _AnxietyQuestionnaireModified({
+  const _AnxietyQuestionnaire({
     required this.onCompleted,
   });
 
   @override
-  State<_AnxietyQuestionnaireModified> createState() =>
-      _AnxietyQuestionnaireModifiedState();
+  State<_AnxietyQuestionnaire> createState() => _AnxietyQuestionnaireState();
 }
 
-class _AnxietyQuestionnaireModifiedState
-    extends State<_AnxietyQuestionnaireModified> {
+class _AnxietyQuestionnaireState extends State<_AnxietyQuestionnaire> {
   int _currentIndex = 0;
   final Map<int, dynamic> _answers = {};
 
   final List<Map<String, dynamic>> _questions = [
     {
-      'title':
-          'How many hours per day do you use technology (phones, computers)?',
+      'title': 'How many hours per day on technology/screens?',
       'image': 'assets/images/question_tech.jpg',
       'type': 'number_hours_day',
       'key': 'Tech_Usage_Hours',
     },
     {
-      'title':
-          'On a scale of 0-10, how sensitive are you to sensory stimuli (lights, sounds, textures)?',
-      'image': 'assets/images/question_health.png',
-      'type': 'number_0_10',
+      'title': 'How sensitive are you to sensory stimuli? (0-10)',
+      'image': 'assets/images/question_support.png',
+      'type': 'rating_scale',
+      'max_rating': 10,
       'key': 'Sensory_Sensitivity',
     },
     {
-      'title': 'Do you typically multitask (do multiple things at once)?',
+      'title': 'Do you usually multitask?',
       'image': 'assets/images/question_work.png',
       'type': 'frequency_grid',
       'options': ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
@@ -289,18 +219,19 @@ class _AnxietyQuestionnaireModifiedState
     {
       'title': 'On a scale of 0-10, how irritable have you felt recently?',
       'image': 'assets/images/question_irritability.png',
-      'type': 'number_0_10',
+      'type': 'rating_scale',
+      'max_rating': 10,
       'key': 'Irritability_Score',
     },
     {
-      'title': 'How many hours per week do you work at a job?',
+      'title': 'How many hours per week do you work?',
       'image': 'assets/images/question_work.png',
       'type': 'number_hours_week',
       'key': 'Work_Hours',
     },
     {
       'title': 'How many hours per week do you exercise?',
-      'image': 'assets/images/question_exercise2.jpg',
+      'image': 'assets/images/question_exercise.jpg',
       'type': 'number_hours_week',
       'key': 'Exercise_Hours',
     },
@@ -324,11 +255,11 @@ class _AnxietyQuestionnaireModifiedState
     final q = _questions[_currentIndex];
     final type = q['type'];
 
-    if (type == 'frequency_grid') {
+    if (type == 'choice' || type == 'frequency_grid') {
       return answer != null;
     }
-    if (type == 'number_0_10') {
-      return answer is int && answer >= 0 && answer <= 10;
+    if (type == 'rating_scale') {
+      return answer is int && answer > 0;
     }
     if (type == 'number_1_10') {
       return answer is int && answer >= 1 && answer <= 10;
@@ -383,32 +314,38 @@ class _AnxietyQuestionnaireModifiedState
       return;
     }
 
-    if (type == 'number_0_10' || type == 'number_1_10') {
+    if (type == 'rating_scale') {
       final n = int.tryParse(value);
-      if (type == 'number_0_10' && n != null && n >= 0 && n <= 10) {
+      if (n != null && n > 0 && n <= 10) {
         _answers[_currentIndex] = n;
-      } else if (type == 'number_1_10' && n != null && n >= 1 && n <= 10) {
+        setState(() {});
+      }
+    } else if (type == 'number_1_10') {
+      final n = int.tryParse(value);
+      if (n != null && n >= 1 && n <= 10) {
         _answers[_currentIndex] = n;
+        setState(() {});
       }
     } else if (type == 'number_hours_day') {
       final n = int.tryParse(value);
       if (n != null && n >= 0 && n <= 24) {
         _answers[_currentIndex] = n;
+        setState(() {});
       }
     } else if (type == 'number_hours_week') {
       final n = int.tryParse(value);
       if (n != null && n >= 0 && n <= 168) {
         _answers[_currentIndex] = n;
+        setState(() {});
       }
     }
-
-    setState(() {});
   }
 
   void _next() {
     if (_currentIndex < _questions.length - 1) {
       setState(() => _currentIndex++);
     } else {
+      print('Anxiety answers: $_answersData');
       widget.onCompleted(_answersData);
     }
   }
@@ -428,7 +365,7 @@ class _AnxietyQuestionnaireModifiedState
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Anxiety Assessment',
+          'Anxiety Questionnaire',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
         ),
       ),
@@ -507,7 +444,9 @@ class _AnxietyQuestionnaireModifiedState
                     elevation: _isNextEnabled ? 3 : 0,
                   ),
                   child: Text(
-                    _currentIndex < _questions.length - 1 ? 'Next' : 'Submit',
+                    _currentIndex < _questions.length - 1
+                        ? 'Next'
+                        : 'Get Prediction',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -567,7 +506,8 @@ class _AnxietyQuestionnaireModifiedState
       );
     }
 
-    if (type == 'number_0_10' || type == 'number_1_10') {
+    if (type == 'rating_scale' || type == 'number_1_10' ||
+        type == 'number_hours_day' || type == 'number_hours_week') {
       return Column(
         children: [
           SizedBox(
@@ -581,7 +521,6 @@ class _AnxietyQuestionnaireModifiedState
                 fontWeight: FontWeight.bold,
               ),
               decoration: InputDecoration(
-                hintText: type == 'number_0_10' ? '0–10' : '1–10',
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -600,47 +539,13 @@ class _AnxietyQuestionnaireModifiedState
           ),
           const SizedBox(height: 16),
           Text(
-            type == 'number_0_10' ? 'Scale: 0-10' : 'Scale: 1-10',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          ),
-        ],
-      );
-    }
-
-    if (type == 'number_hours_day' || type == 'number_hours_week') {
-      return Column(
-        children: [
-          SizedBox(
-            width: 220,
-            child: TextField(
-              key: ValueKey('numeric_input_$_currentIndex'),
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: InputDecoration(
-                hintText: type == 'number_hours_day' ? '0–24' : '0–168',
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.blue[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.blue,
-                    width: 2.5,
-                  ),
-                ),
-              ),
-              onChanged: (v) => _onNumberChanged(v, type),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            type == 'number_hours_day' ? 'Hours per day' : 'Hours per week',
+            type == 'rating_scale'
+                ? 'Scale: 1-10'
+                : type == 'number_1_10'
+                    ? 'Scale: 1-10'
+                    : type == 'number_hours_day'
+                        ? 'Hours: 0-24'
+                        : 'Hours: 0-168',
             style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
@@ -651,24 +556,22 @@ class _AnxietyQuestionnaireModifiedState
   }
 }
 
-class _AnxietyResultScreen extends StatelessWidget {
+// Result Screen Widget
+class _ResultScreen extends StatelessWidget {
   final Map<String, dynamic>? result;
-  final Map<String, dynamic>? userFeatures;
   final VoidCallback onClose;
-  final VoidCallback onSubmit;
 
-  const _AnxietyResultScreen({
+  const _ResultScreen({
     this.result,
-    this.userFeatures,
     required this.onClose,
-    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasResult = result != null;
-    final prediction = result?['prediction'] as int? ?? 0;
-    final probability = result?['probability'] as double? ?? 0.0;
+    // Extract from nested data structure
+    final prediction = result?['data']?['prediction'] as int? ?? 0;
+    final probability = result?['data']?['probability'] as double? ?? 0.0;
     final hasAnxiety = prediction == 1;
 
     return Scaffold(
@@ -693,27 +596,23 @@ class _AnxietyResultScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color:
-                          hasAnxiety ? Colors.purple[100] : Colors.green[100],
+                          hasAnxiety ? Colors.red[100] : Colors.green[100],
                     ),
                     child: Center(
                       child: Icon(
-                        hasAnxiety
-                            ? Icons.sentiment_very_dissatisfied
-                            : Icons.sentiment_satisfied,
+                        hasAnxiety ? Icons.warning : Icons.check_circle,
                         size: 60,
-                        color: hasAnxiety ? Colors.purple : Colors.green,
+                        color: hasAnxiety ? Colors.red : Colors.green,
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    hasAnxiety
-                        ? 'Anxiety Symptoms Detected'
-                        : 'No Anxiety Detected',
+                    hasAnxiety ? 'High Anxiety Detected' : 'No Anxiety Detected',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: hasAnxiety ? Colors.purple : Colors.green,
+                      color: hasAnxiety ? Colors.red : Colors.green,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -741,7 +640,7 @@ class _AnxietyResultScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Assessment Details',
+                          'Assessment Result',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -751,7 +650,7 @@ class _AnxietyResultScreen extends StatelessWidget {
                         _buildDetailRow(
                           'Status',
                           hasAnxiety ? 'Anxiety Detected' : 'No Anxiety',
-                          hasAnxiety ? Colors.purple : Colors.green,
+                          hasAnxiety ? Colors.red : Colors.green,
                         ),
                         const SizedBox(height: 12),
                         _buildDetailRow('Confidence',

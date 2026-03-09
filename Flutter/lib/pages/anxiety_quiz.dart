@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health_research/services/AnxietyApiService.dart';
 import 'package:health_research/models/AnxietyResult.dart';
 
+import 'anxiety_check_flow.dart';
+
 class AnxietyQuiz extends StatefulWidget {
   const AnxietyQuiz({super.key});
 
@@ -146,7 +148,17 @@ class _AnxietyQuizState extends State<AnxietyQuiz> {
 
                       /// BUTTON
                       ElevatedButton(
-                        onPressed: isLoadingAnxiety ? null : checkAnxiety,
+                        onPressed: isLoadingAnxiety
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AnxietyCheckFlow(userId: patientId),
+                                  ),
+                                );
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(
