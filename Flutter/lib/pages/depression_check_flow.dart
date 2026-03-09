@@ -62,6 +62,21 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
 
   Future<void> _onDepressionQuestionnaireCompleted(
       Map<String, dynamic> answersData) async {
+    // Move to submit screen (show summary with submit button)
+    setState(() {
+      _currentStep = 2; // Show depression result screen with submit option
+    });
+
+    // Store answers for submission
+    _depressionAnswersData = answersData;
+  }
+
+  // Store depression answers for later submission
+  Map<String, dynamic>? _depressionAnswersData;
+
+  Future<void> _submitDepressionAssessment() async {
+    if (_depressionAnswersData == null) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -70,20 +85,26 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
       // Build payload for depression prediction according to API specification
       final payload = {
         'Irritability_Score':
-            (answersData['Irritability_Score'] as num?)?.toDouble() ?? 0.0,
+            (_depressionAnswersData!['Irritability_Score'] as num?)
+                    ?.toDouble() ??
+                0.0,
         'Sleep_Quality':
-            (answersData['Sleep_Quality'] as num?)?.toDouble() ?? 0.0,
+            (_depressionAnswersData!['Sleep_Quality'] as num?)?.toDouble() ??
+                0.0,
         'Sleep_Hours': _sleepHours ?? 0.0,
-        'Work_Hours': (answersData['Work_Hours'] as num?)?.toDouble() ?? 0.0,
-        'Social_Interaction':
-            (answersData['Social_Interaction'] as num?)?.toDouble() ?? 0.0,
         'Noise_Exposure':
-            (answersData['Noise_Exposure'] as num?)?.toDouble() ?? 0.0,
+            (_depressionAnswersData!['Noise_Exposure'] as num?)?.toDouble() ??
+                0.0,
         'Sensory_Sensitivity':
-            (answersData['Sensory_Sensitivity'] as num?)?.toDouble() ?? 0.0,
-        'Age_div_Screen_Time': _age != null && _screenTime != null
-            ? _age! / (_screenTime! + 0.001)
-            : 0.0,
+            (_depressionAnswersData!['Sensory_Sensitivity'] as num?)
+                    ?.toDouble() ??
+                0.0,
+        'Social_Interaction_div_Exercise_Hours': 0.0, // Placeholder
+        'Tech_Usage_Hours': 0.0, // From stored data
+        'num_missing': 0.0,
+        'Overthinking_Score': 0, // From questionnaire if added
+        'Screen_Time': _screenTime ?? 0.0,
+        'Heart_Rate': 78.0, // Default or from sensor
       };
 
       // Call the predict depression endpoint
@@ -92,9 +113,18 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
 
       setState(() {
         _predictionResult = result;
-        _currentStep = 2; // Move to result screen
         _isLoading = false;
       });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              const Text('✅ Depression assessment submitted successfully!'),
+          backgroundColor: Colors.green[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       setState(() {
         _errorMessage = 'Error submitting questionnaire: $e';
@@ -175,6 +205,7 @@ class _DepressionCheckFlowState extends State<DepressionCheckFlow> {
         result: _predictionResult,
         userFeatures: _userFeatures,
         onClose: () => Navigator.of(context).pop(),
+        onSubmit: _submitDepressionAssessment,
       );
     }
 
@@ -441,9 +472,7 @@ class _DepressionQuestionnaireModifiedState
                     elevation: _isNextEnabled ? 3 : 0,
                   ),
                   child: Text(
-                    _currentIndex < _questions.length - 1
-                        ? 'Next'
-                        : 'Get Prediction',
+                    _currentIndex < _questions.length - 1 ? 'Next' : 'Submit',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -591,15 +620,18 @@ class _DepressionResultScreen extends StatelessWidget {
   final Map<String, dynamic>? result;
   final Map<String, dynamic>? userFeatures;
   final VoidCallback onClose;
+  final VoidCallback onSubmit;
 
   const _DepressionResultScreen({
     this.result,
     this.userFeatures,
     required this.onClose,
+    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasResult = result != null;
     final prediction = result?['prediction'] as int? ?? 0;
     final probability = result?['probability'] as double? ?? 0.0;
     final isDepressed = prediction == 1;
@@ -619,75 +651,83 @@ class _DepressionResultScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isDepressed ? Colors.orange[100] : Colors.green[100],
+                if (hasResult) ...[
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color:
+                          isDepressed ? Colors.orange[100] : Colors.green[100],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isDepressed ? Icons.mood_bad : Icons.mood,
+                        size: 60,
+                        color: isDepressed ? Colors.orange : Colors.green,
+                      ),
+                    ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      isDepressed ? Icons.mood_bad : Icons.mood,
-                      size: 60,
+                  const SizedBox(height: 24),
+                  Text(
+                    isDepressed
+                        ? 'Signs of Depression Detected'
+                        : 'No Depression Detected',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
                       color: isDepressed ? Colors.orange : Colors.green,
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  isDepressed
-                      ? 'Signs of Depression Detected'
-                      : 'No Depression Detected',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: isDepressed ? Colors.orange : Colors.green,
+                  const SizedBox(height: 12),
+                  Text(
+                    'Confidence: ${(probability * 100).toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Confidence: ${(probability * 100).toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Assessment Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 40),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDetailRow(
-                        'Status',
-                        isDepressed ? 'Depression Detected' : 'No Depression',
-                        isDepressed ? Colors.orange : Colors.green,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailRow('Confidence',
-                          '${(probability * 100).toStringAsFixed(1)}%'),
-                    ],
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Assessment Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDetailRow(
+                          'Status',
+                          isDepressed ? 'Depression Detected' : 'No Depression',
+                          isDepressed ? Colors.orange : Colors.green,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Confidence',
+                            '${(probability * 100).toStringAsFixed(1)}%'),
+                      ],
+                    ),
                   ),
-                ),
+                ] else ...[
+                  const Text(
+                    'Processing Assessment...',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
                 const SizedBox(height: 40),
                 SizedBox(
                   width: double.infinity,
