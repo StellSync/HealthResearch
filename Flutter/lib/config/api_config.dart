@@ -10,9 +10,9 @@ class ApiConfig {
 
   /// Patient doctor session management (Port 8000) - For session scheduling and management
   static const String baseUrl = 'http://10.160.151.43:8000';
-  /// Time series prediction (Port 8001) - For stress, depression, anxiety predictions
+  /// Time series prediction (Port 8003) - For stress, depression, anxiety predictions
   static const String baseUrl3 = 'http://10.160.151.43:8001';
-  /// Burnout (Port 8003)
+  /// Burnout backend (Port 8001)
   static const String baseUrl2 = 'http://10.160.151.43:8002';
   /// Overstimulated (Port 8002)
   static const String baseUrl1 = 'http://10.160.151.43:8003';

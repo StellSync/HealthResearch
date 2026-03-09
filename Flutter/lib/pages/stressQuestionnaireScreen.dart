@@ -616,8 +616,8 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           final responseData = jsonDecode(response.body);
-          final prediction = responseData['data']['predicted'];
-          final probability = responseData['data']['probability'];
+          final prediction = responseData['data']['prediction'];
+          final probability = responseData['data']['probability_high_burnout'] ?? responseData['data']['probability'] ?? 0.0;
 
           // Check if user is stressed (prediction == 1)
           final isStressed = prediction == 1;
