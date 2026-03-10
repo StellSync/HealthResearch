@@ -57,15 +57,18 @@ class StressApiService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/predict/stress'),
+        Uri.parse('${ApiConfig.baseUrl1}/predict/stress'),
         headers: ApiConfig.defaultHeaders,
         body: jsonEncode({
           'user_id': userId,
-          ...payload,
+          'data': payload,
         }),
       );
 
+      print("Predict Stress Response status: ${response.statusCode}");
+
       if (response.statusCode == 200) {
+        print("Predict Stress Response body: ${response.body}");
         final jsonResponse = jsonDecode(response.body);
         return jsonResponse as Map<String, dynamic>;
       } else {

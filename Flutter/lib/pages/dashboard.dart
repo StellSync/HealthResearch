@@ -25,6 +25,7 @@ class _DashboardState extends State<Dashboard> {
   ForecastData? forecastData;
   List<Prediction> selectedPredictions = [];
   bool isForecastLoading = false;
+  int _sleepHours = 0;
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _DashboardState extends State<Dashboard> {
     if (patientId.isNotEmpty) {
       await _fetchDashboardData();
       await _fetchForecastData();
+      await _fetchHealthMetrics();
     }
   }
 
@@ -59,6 +61,7 @@ class _DashboardState extends State<Dashboard> {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
+        print("Dashboard Response: $jsonResponse");
         setState(() {
           pendingSessions = jsonResponse['pending_sessions'] ?? 0;
           memberSince = jsonResponse['member_since'] ?? '';
@@ -98,6 +101,27 @@ class _DashboardState extends State<Dashboard> {
       // Error fetching forecast data
     }
     setState(() => isForecastLoading = false);
+  }
+
+  Future<void> _fetchHealthMetrics() async {
+    try {
+
+      final url = Uri.parse('${ApiConfig.baseUrl1}/user_features/$patientId');
+
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _sleepHours = data['features']['Sleep_Hours'] ?? 0;
+        });
+      }
+    } catch (e) {
+      print('Error fetching health metrics: $e');
+    }
   }
 
   String _getGreeting() {
@@ -246,7 +270,7 @@ class _DashboardState extends State<Dashboard> {
         const SizedBox(width: 12),
         Expanded(
           child: _infoCard(
-            title: "Sessions Pending",
+            title: "Sleep Hours",
             child: isLoading
                 ? const SizedBox(
                     height: 60,
@@ -258,12 +282,12 @@ class _DashboardState extends State<Dashboard> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        pendingSessions.toString(),
+                        _sleepHours.toString(),
                         style: const TextStyle(
                             fontSize: 36, fontWeight: FontWeight.bold),
                       ),
                       const Text(
-                        "Remaining this month",
+                        "hours last night",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 12),
                       ),

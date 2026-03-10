@@ -305,7 +305,7 @@ class _DailyJournalState extends State<DailyJournal> {
                                               const SizedBox(width: 8),
                                               Text(
                                                 isStressed
-                                                    ? 'Stressed'
+                                                    ? 'Burnout'
                                                     : 'Calm',
                                                 style: TextStyle(
                                                   fontSize: 14,

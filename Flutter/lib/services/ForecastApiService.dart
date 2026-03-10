@@ -55,7 +55,7 @@ class ForecastApiService {
       final randomStudentId = Random().nextInt(10) + 1;
 
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl2}/forecast/$randomStudentId'),
+        Uri.parse('${ApiConfig.baseUrl3}/forecast/$randomStudentId'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
