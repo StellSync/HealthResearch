@@ -9,17 +9,17 @@ class ApiConfig {
 
 
   /// Patient doctor session management (Port 8000) - For session scheduling and management
-  static const String baseUrl = 'http://10.66.155.43:8000';
+  static const String baseUrl = 'http://10.73.137.43:8000';
   /// Burnout backend (Port 8001)
-  static const String baseUrl2 = 'http://10.66.155.43:8001';
+  static const String baseUrl2 = 'http://10.73.137.43:8001';
   /// Overstimulated (Port 8002)
-  static const String baseUrl1 = 'http://10.66.155.43:8002';
+  static const String baseUrl1 = 'http://10.73.137.43:8002';
   /// Time series prediction (Port 8003) - For stress, depression, anxiety predictions
-  static const String baseUrl3 = 'http://10.66.155.43:8003';
+  static const String baseUrl3 = 'http://10.73.137.43:8003';
 
 
   /// Agora Token Server URL (Port 8000) - For video call tokens
-  static const String agoraTokenServerUrl = 'http://10.66.155.43:8000';
+  static const String agoraTokenServerUrl = 'http://10.95.54.43:8000';
 
 
   /// API Version (optional, for future use)

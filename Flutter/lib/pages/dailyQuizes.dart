@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'overStimulated.dart';
 import 'stress_quiz.dart';
 import 'anxiety_quiz.dart';
 import 'depression_quiz.dart';
@@ -55,10 +56,10 @@ class DailyQuizes extends StatelessWidget {
             ),
             _buildCard(
               context,
-              title: "Daily Journal",
-              subtitle: "Express your thoughts • Reflect • Release",
-              image: "assets/images/academic-quiz.png",
-              page: const DailyJournal(),
+              title: "Over-stimulated Quest",
+              subtitle: "Check for signs of emotional and physical exhaustion to find out if you may be experiencing burnout.",
+              image: "assets/images/burnout-quiz.png",
+              page: const Overstimulated(),
               highlight: true,
               color: const Color(0xFFFFCA28), // warm amber
             ),

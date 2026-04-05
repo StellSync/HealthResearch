@@ -72,6 +72,7 @@ class _LoginState extends State<Login> {
     if (user.dob != null) {
       await prefs.setString('dob', user.dob!);
     }
+    await prefs.setInt('age', user.age);
   }
 
   @override

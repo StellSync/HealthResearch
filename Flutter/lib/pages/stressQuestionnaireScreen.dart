@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:health_research/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:health_research/pages/daily_journal.dart';
 
 class StressQuestionnaireScreen extends StatefulWidget {
   const StressQuestionnaireScreen({super.key});
@@ -668,6 +669,13 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
     bool isStressed,
     double probability,
   ) {
+    // If stress is high, show confirmation dialog asking to write journal
+    if (isStressed) {
+      _showHighStressConfirmationDialog(message, probability);
+      return;
+    }
+
+    // Otherwise show the normal result dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -680,8 +688,8 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
           title: Row(
             children: [
               Icon(
-                isStressed ? Icons.warning_amber : Icons.check_circle,
-                color: isStressed ? Colors.orange : Colors.green,
+                Icons.check_circle,
+                color: Colors.green,
                 size: 32,
               ),
               const SizedBox(width: 12),
@@ -701,10 +709,10 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
             children: [
               Text(
                 message,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: isStressed ? Colors.orange : Colors.green,
+                  color: Colors.green,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -712,10 +720,10 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isStressed ? Colors.orange.shade50 : Colors.green.shade50,
+                  color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isStressed ? Colors.orange.shade200 : Colors.green.shade200,
+                    color: Colors.green.shade200,
                   ),
                 ),
                 child: Column(
@@ -733,15 +741,15 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: isStressed ? Colors.orange[700] : Colors.green[700],
+                        color: Colors.green[700],
                       ),
                     ),
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
                       value: probability,
                       backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isStressed ? Colors.orange : Colors.green,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.green,
                       ),
                       minHeight: 6,
                     ),
@@ -749,70 +757,68 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              if (isStressed)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recommendations:',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange[700],
-                        ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Great Job! 🎉',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[700],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '• Break down assignments into smaller tasks\n'
-                        '• Create a study schedule\n'
-                        '• Take regular breaks (5-10 min every hour)\n'
-                        '• Seek support from professors or peers\n'
-                        '• Practice stress management techniques',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                          height: 1.6,
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'You\'re managing academic stress well. Keep maintaining a healthy balance between work and rest.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                        height: 1.6,
                       ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Great Job! 🎉',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green[700],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'You\'re managing academic stress well. Keep maintaining a healthy balance between work and rest.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                          height: 1.6,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.blue.shade200,
                   ),
                 ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Optional: Double Check',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Write a journal entry to verify your current stress level and keep a personal record of your wellness journey.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           actions: [
@@ -826,6 +832,187 @@ class _StressQuestionnaireScreenState extends State<StressQuestionnaireScreen> {
               ),
               child: const Text(
                 'Done',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the alert
+                Navigator.pop(context); // Close the questionnaire
+                // Navigate to DailyJournal screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DailyJournal(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text(
+                'Write Journal',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show high stress confirmation dialog with journal navigation
+  void _showHighStressConfirmationDialog(
+    String message,
+    double probability,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.warning_amber,
+                color: Colors.red,
+                size: 32,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const Text(
+                  '⚠️ High Stress Alert',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.red.shade200,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Stress Confidence Score',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${(probability * 100).toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: probability,
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.red,
+                        ),
+                        minHeight: 6,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Please Confirm Your Status',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Write a brief entry in your daily journal to confirm your current stress level and help us understand your situation better.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey,
+              ),
+              child: const Text(
+                'Skip',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the alert
+                Navigator.pop(context); // Close the questionnaire
+                // Navigate to DailyJournal screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DailyJournal(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text(
+                'Write Journal',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),

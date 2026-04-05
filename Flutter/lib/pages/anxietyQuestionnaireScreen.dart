@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:health_research/services/AnxietyApiService.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AnxietyQuestionnaireScreen extends StatefulWidget {
   final String? userId;
@@ -17,6 +18,21 @@ class _AnxietyQuestionnaireScreenState
   final Map<int, dynamic> _answers = {};
   bool _isSubmitting = false;
   final AnxietyApiService _apiService = AnxietyApiService();
+  int _age = 0; // Store age from session
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAgeFromSession();
+  }
+
+  Future<void> _loadAgeFromSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _age = prefs.getInt('age') ?? 0;
+    });
+    print('✅ Age loaded from session: $_age');
+  }
 
   bool get _isNextEnabled {
     final answer = _answers[_currentIndex];
@@ -34,9 +50,6 @@ class _AnxietyQuestionnaireScreenState
     }
     if (type == 'number_hours_day') {
       return answer is int && answer >= 0 && answer <= 24;
-    }
-    if (type == 'number_age') {
-      return answer is int && answer >= 10 && answer <= 100;
     }
     return false;
   }
@@ -57,7 +70,7 @@ class _AnxietyQuestionnaireScreenState
       'Social_Interaction_div_Work_Hours':
           _calculateRatio(_answers[5], _answers[9]) ?? 0.0,
       'Sleep_Hours': _answers[3]?.toDouble() ?? 0.0,
-      'Age': _answers[10]?.toDouble() ?? 0.0,
+      'Age': _age.toDouble(), // Use age from session
     };
   }
 
@@ -133,12 +146,6 @@ class _AnxietyQuestionnaireScreenState
       'image': 'assets/images/question_work.png',
       'type': 'number_hours_day',
       'key': 'Work_Hours',
-    },
-    {
-      'title': 'Your age?',
-      'image': 'assets/images/question_health.png',
-      'type': 'number_age',
-      'key': 'Age',
     },
   ];
 

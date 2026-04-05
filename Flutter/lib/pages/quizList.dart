@@ -3,6 +3,7 @@ import 'package:health_research/pages/overStimulated.dart';
 import 'package:health_research/pages/warebleHome.dart';
 
 import 'academicHome.dart';
+import 'daily_journal.dart';
 
 class QuizList extends StatefulWidget {
   const QuizList({super.key});
@@ -62,13 +63,13 @@ class _QuizListState extends State<QuizList> {
               ),
               const SizedBox(height: 16),
               _buildQuestCard(
-                icon: 'assets/images/burnout-quiz.png',
-                title: 'Over-stimulated Quest',
+                icon: 'assets/images/academic-quiz.png',
+                title: 'Daily Journal',
                 description:
-                    'Check for signs of emotional and physical exhaustion to find out if you may be experiencing burnout.',
+                    'Express your thoughts • Reflect • Release',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const Overstimulated()),
+                  MaterialPageRoute(builder: (context) => const DailyJournal()),
                 ),
               ),
               const SizedBox(height: 30),

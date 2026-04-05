@@ -17,6 +17,7 @@ class UserApiService {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
+        print('Login successful: $jsonResponse');
 
         // Parse the API response directly
         User user = User.fromJson({
@@ -24,6 +25,7 @@ class UserApiService {
           'first_name': jsonResponse['first_name'],
           'email': jsonResponse['email'],
           'has_assigned_doctors': jsonResponse['has_assigned_doctors'],
+          'age': jsonResponse['age'],
         });
 
         return user;

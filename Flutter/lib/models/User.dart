@@ -11,6 +11,7 @@ class User {
   final String? dob;
   final String? role;
   final String? joinedAt;
+  final int age = 0; // ← default age field for backward compatibility
 
   User({
     required this.patientId,
